@@ -1,0 +1,125 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model User {
+  id            String    @id @default(cuid())
+  name          String?
+  email         String    @unique
+  password      String?
+  emailVerified DateTime?
+  image         String?
+  walletBalance Int       @default(0)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  accounts     Account[]
+  sessions     Session[]
+  player1Matches Match[] @relation("Player1")
+  player2Matches Match[] @relation("Player2")
+  transactions Transaction[]
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+model Match {
+  id         String      @id @default(cuid())
+  type       MatchType
+  entryFee   Int         @default(0)
+  prize      Int         @default(0)
+  sudokuGrid String
+  solution   String?
+  player1Id  String
+  player2Id  String?
+  winnerId   String?
+  startedAt  DateTime    @default(now())
+  endedAt    DateTime?
+  status     MatchStatus @default(WAITING)
+  createdAt  DateTime    @default(now())
+  updatedAt  DateTime    @updatedAt
+
+  player1 User  @relation("Player1", fields: [player1Id], references: [id])
+  player2 User? @relation("Player2", fields: [player2Id], references: [id])
+
+  @@index([status])
+  @@index([type])
+}
+
+model Transaction {
+  id          String          @id @default(cuid())
+  userId      String
+  amount      Int
+  type        TransactionType
+  description String?
+  razorpayId  String?
+  status      String          @default("pending")
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+  @@index([type])
+}
+
+enum MatchType {
+  SINGLE_PLAYER
+  MULTIPLAYER_FREE
+  MULTIPLAYER_PAID
+}
+
+enum MatchStatus {
+  WAITING
+  ONGOING
+  FINISHED
+  CANCELLED
+}
+
+enum TransactionType {
+  ADD_FUNDS
+  WITHDRAW
+  MATCH_WIN
+  ENTRY_FEE
+}
