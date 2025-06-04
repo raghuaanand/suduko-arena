@@ -1,13 +1,10 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
 generator client {
   provider = "prisma-client-js"
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
   directUrl = env("DIRECT_URL")
 }
 
@@ -17,15 +14,14 @@ model Account {
   type              String
   provider          String
   providerAccountId String
-  refresh_token     String? @db.Text
-  access_token      String? @db.Text
+  refresh_token     String?
+  access_token      String?
   expires_at        Int?
   token_type        String?
   scope             String?
-  id_token          String? @db.Text
+  id_token          String?
   session_state     String?
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([provider, providerAccountId])
 }
@@ -39,21 +35,23 @@ model Session {
 }
 
 model User {
-  id            String    @id @default(cuid())
-  name          String?
-  email         String    @unique
-  password      String?
-  emailVerified DateTime?
-  image         String?
-  walletBalance Int       @default(0)
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
-
-  accounts     Account[]
-  sessions     Session[]
-  player1Matches Match[] @relation("Player1")
-  player2Matches Match[] @relation("Player2")
-  transactions Transaction[]
+  id             String            @id @default(cuid())
+  name           String?
+  email          String            @unique
+  password       String?
+  emailVerified  DateTime?
+  image          String?
+  walletBalance  Int               @default(0)
+  createdAt      DateTime          @default(now())
+  updatedAt      DateTime          @updatedAt
+  accounts       Account[]
+  player1Matches Match[]           @relation("Player1")
+  player2Matches Match[]           @relation("Player2")
+  sessions       Session[]
+  transactions   Transaction[]
+  achievements   UserAchievement[]
+  createdTournaments Tournament[]  @relation("TournamentCreator")
+  tournamentParticipations TournamentParticipant[]
 }
 
 model VerificationToken {
@@ -79,9 +77,8 @@ model Match {
   status     MatchStatus @default(WAITING)
   createdAt  DateTime    @default(now())
   updatedAt  DateTime    @updatedAt
-
-  player1 User  @relation("Player1", fields: [player1Id], references: [id])
-  player2 User? @relation("Player2", fields: [player2Id], references: [id])
+  player1    User        @relation("Player1", fields: [player1Id], references: [id])
+  player2    User?       @relation("Player2", fields: [player2Id], references: [id])
 
   @@index([status])
   @@index([type])
@@ -97,8 +94,7 @@ model Transaction {
   status      String          @default("pending")
   createdAt   DateTime        @default(now())
   updatedAt   DateTime        @updatedAt
-
-  user User @relation(fields: [userId], references: [id])
+  user        User            @relation(fields: [userId], references: [id])
 
   @@index([userId])
   @@index([type])
@@ -122,4 +118,56 @@ enum TransactionType {
   WITHDRAW
   MATCH_WIN
   ENTRY_FEE
+  ADMIN_CREDIT
+  ADMIN_DEBIT
+}
+
+enum TournamentStatus {
+  REGISTRATION_OPEN
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+}
+
+model Tournament {
+  id              String                    @id @default(cuid())
+  name            String
+  description     String?
+  entryFee        Int
+  maxParticipants Int
+  startTime       DateTime
+  endTime         DateTime?
+  status          TournamentStatus          @default(REGISTRATION_OPEN)
+  prizes          Json?
+  winnerId        String?
+  createdById     String
+  createdAt       DateTime                  @default(now())
+  updatedAt       DateTime                  @updatedAt
+  createdBy       User                      @relation("TournamentCreator", fields: [createdById], references: [id])
+  participants    TournamentParticipant[]
+  
+  @@index([status])
+  @@index([startTime])
+}
+
+model TournamentParticipant {
+  id           String     @id @default(cuid())
+  tournamentId String
+  userId       String
+  joinedAt     DateTime   @default(now())
+  tournament   Tournament @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
+  user         User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@unique([tournamentId, userId])
+}
+
+model UserAchievement {
+  id            String   @id @default(cuid())
+  userId        String
+  achievementId String
+  unlockedAt    DateTime @default(now())
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@unique([userId, achievementId])
+  @@index([userId])
 }

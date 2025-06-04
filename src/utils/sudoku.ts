@@ -1,4 +1,4 @@
-import { SudokuGrid, SudokuCell } from '@/types'
+import { SudokuGrid } from '@/types'
 
 /**
  * Generate an empty 9x9 Sudoku grid

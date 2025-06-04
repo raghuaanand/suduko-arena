@@ -1,6 +1,8 @@
 'use client';
 
 import { useState } from 'react';
+import { useSession } from 'next-auth/react';
+import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { SudokuGridComponent } from '@/components/sudoku/SudokuGrid';
@@ -14,11 +16,13 @@ import {
   Crown,
   Timer,
   Target,
-  Zap
+  Zap,
+  User
 } from 'lucide-react';
 
 export default function Home() {
   const [demoGrid] = useState(() => generatePuzzle('medium').puzzle);
+  const { data: session } = useSession();
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 dark:from-gray-900 dark:via-gray-800 dark:to-purple-900">
@@ -35,13 +39,26 @@ export default function Home() {
               </h1>
             </div>
             <div className="flex items-center space-x-2 sm:space-x-4">
-              <Button variant="ghost" size="sm" className="hidden sm:flex">
-                <Wallet className="w-4 h-4 mr-2" />
-                ₹0.00
-              </Button>
-              <Button variant="outline" size="sm">
-                Sign In
-              </Button>
+              {session && (
+                <Button variant="ghost" size="sm" className="hidden sm:flex">
+                  <Wallet className="w-4 h-4 mr-2" />
+                  ₹0.00
+                </Button>
+              )}
+              {session ? (
+                <Link href="/dashboard">
+                  <Button size="sm" className="flex items-center space-x-2">
+                    <User className="w-4 h-4" />
+                    <span>Dashboard</span>
+                  </Button>
+                </Link>
+              ) : (
+                <Link href="/auth/signin">
+                  <Button variant="outline" size="sm">
+                    Sign In
+                  </Button>
+                </Link>
+              )}
             </div>
           </div>
         </div>
@@ -62,10 +79,21 @@ export default function Home() {
               or compete in tournaments with real cash prizes.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
-              <Button size="lg" className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700">
-                <Play className="w-5 h-5 mr-2" />
-                Start Playing
-              </Button>
+              {session ? (
+                <Link href="/dashboard">
+                  <Button size="lg" className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700">
+                    <Play className="w-5 h-5 mr-2" />
+                    Start Playing
+                  </Button>
+                </Link>
+              ) : (
+                <Link href="/auth/signin">
+                  <Button size="lg" className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700">
+                    <Play className="w-5 h-5 mr-2" />
+                    Start Playing
+                  </Button>
+                </Link>
+              )}
               <Button variant="outline" size="lg">
                 Watch Demo
               </Button>
@@ -129,9 +157,11 @@ export default function Home() {
                   Achievement system
                 </li>
               </ul>
-              <Button className="w-full" variant="outline">
-                Play vs AI
-              </Button>
+              <Link href={session ? "/dashboard?mode=ai" : "/auth/signin"}>
+                <Button className="w-full" variant="outline">
+                  Play vs AI
+                </Button>
+              </Link>
             </CardContent>
           </Card>
 
@@ -164,9 +194,11 @@ export default function Home() {
                   Ranking system
                 </li>
               </ul>
-              <Button className="w-full" variant="outline">
-                Find Match
-              </Button>
+              <Link href={session ? "/dashboard?mode=multiplayer" : "/auth/signin"}>
+                <Button className="w-full" variant="outline">
+                  Find Match
+                </Button>
+              </Link>
             </CardContent>
           </Card>
 
@@ -199,9 +231,11 @@ export default function Home() {
                   Secure payments
                 </li>
               </ul>
-              <Button className="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700">
-                Join Tournament
-              </Button>
+              <Link href={session ? "/tournaments" : "/auth/signin"}>
+                <Button className="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700">
+                  View Tournaments
+                </Button>
+              </Link>
             </CardContent>
           </Card>
         </div>
