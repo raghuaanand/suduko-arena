@@ -147,7 +147,7 @@ export async function POST(
         await prisma.match.update({
           where: { id: matchId },
           data: {
-            status: 'COMPLETED',
+            status: 'FINISHED',
             winnerId: session.user.id,
             endedAt: new Date()
           }
@@ -167,7 +167,7 @@ export async function POST(
             data: {
               userId: session.user.id,
               amount: match.prize,
-              type: 'PRIZE',
+              type: 'MATCH_WIN',
               description: `Prize won for match ${matchId}`,
               status: 'completed'
             }

@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
-import { TransactionType, TransactionStatus, Prisma } from '@prisma/client'
+import { TransactionType, Prisma } from '@prisma/client'
 
 export async function GET(request: NextRequest) {
   try {
@@ -27,7 +27,7 @@ export async function GET(request: NextRequest) {
     const page = parseInt(searchParams.get('page') || '1')
     const limit = parseInt(searchParams.get('limit') || '50')
     const type = searchParams.get('type') as TransactionType | null
-    const status = searchParams.get('status') as TransactionStatus | null
+    const status = searchParams.get('status') as string | null
     
     const skip = (page - 1) * limit
 

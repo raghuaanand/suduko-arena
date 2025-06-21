@@ -18,8 +18,7 @@ import {
   Activity,
   Wifi,
   RefreshCw,
-  Eye,
-  Settings
+  Eye
 } from 'lucide-react'
 
 interface SystemHealth {
@@ -405,19 +404,7 @@ export default function AdminDashboard() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <Button 
-              variant="outline" 
-              className="p-4 h-auto"
-              onClick={() => window.open('/test-multiplayer', '_blank')}
-            >
-              <div className="text-center">
-                <Settings className="h-6 w-6 mx-auto mb-2" />
-                <div className="font-medium">System Tests</div>
-                <div className="text-sm text-gray-600">Run diagnostics</div>
-              </div>
-            </Button>
-            
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <Button 
               variant="outline" 
               className="p-4 h-auto"

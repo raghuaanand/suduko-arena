@@ -168,23 +168,6 @@ export function setupSocketIO(io: SocketIOServer) {
       }
     })
 
-    // Test handlers for Socket.IO functionality testing
-    socket.on('join-room', (roomId: string) => {
-      socket.join(roomId)
-      console.log(`Socket ${socket.id} joined room ${roomId}`)
-      socket.emit('test-message', { 
-        message: `Successfully joined room ${roomId}`, 
-        sender: 'Server' 
-      })
-    })
-
-    socket.on('test-broadcast', (data: { room: string; message: string; sender: string }) => {
-      console.log(`Broadcasting test message to room ${data.room}:`, data.message)
-      io.to(data.room).emit('test-message', {
-        message: data.message,
-        sender: data.sender
-      })
-    })
   })
 }
 

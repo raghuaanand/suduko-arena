@@ -44,14 +44,14 @@ export async function GET(request: NextRequest) {
             player1Matches: {
               where: {
                 ...dateFilter,
-                status: 'COMPLETED',
+                status: 'FINISHED',
                 winnerId: { not: null }
               }
             },
             player2Matches: {
               where: {
                 ...dateFilter,
-                status: 'COMPLETED',
+                status: 'FINISHED',
                 winnerId: { not: null }
               }
             }
@@ -69,7 +69,7 @@ export async function GET(request: NextRequest) {
           where: {
             ...dateFilter,
             player1Id: user.id,
-            status: 'COMPLETED',
+            status: 'FINISHED',
             winnerId: user.id
           }
         })
@@ -79,7 +79,7 @@ export async function GET(request: NextRequest) {
           where: {
             ...dateFilter,
             player2Id: user.id,
-            status: 'COMPLETED',
+            status: 'FINISHED',
             winnerId: user.id
           }
         })
@@ -92,7 +92,7 @@ export async function GET(request: NextRequest) {
               { player1Id: user.id },
               { player2Id: user.id }
             ],
-            status: 'COMPLETED'
+            status: 'FINISHED'
           }
         })
 

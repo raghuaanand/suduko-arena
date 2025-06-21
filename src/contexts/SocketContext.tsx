@@ -1,6 +1,6 @@
 'use client'
 
-import { createContext, useContext, useEffect, useState } from 'react'
+import { createContext, useContext, useEffect, useState, useRef } from 'react'
 import { useSession } from 'next-auth/react'
 import { io, type Socket } from 'socket.io-client'
 
@@ -12,31 +12,54 @@ interface GameState {
   isActive: boolean
 }
 
-interface MoveData {
-  playerId: string
-  row: number
-  col: number
-  value: number
-  gameState: number[][]
-  timeElapsed: number
-  movesCount: number
-  hintsUsed: number
-  errorsCount: number
-  isComplete?: boolean
+interface RoomState {
+  id: string
+  status: 'WAITING' | 'STARTING' | 'IN_PROGRESS' | 'PAUSED' | 'COMPLETED' | 'ABANDONED'
+  players: Array<{
+    id: string
+    name: string
+    isReady: boolean
+    isConnected: boolean
+    score: number
+    moves: number
+    hintsUsed: number
+    hintsRemaining: number
+  }>
+  spectatorCount: number
+  gameState: {
+    grid?: number[][]
+    solution?: number[][]
+    timeRemaining?: number
+    gameMode: 'SIMULTANEOUS' | 'TURN_BASED' | 'SPEED_BATTLE' | 'SINGLE_PLAYER'
+    difficulty: 'easy' | 'medium' | 'hard'
+    startTime?: Date
+  }
+  settings: {
+    timeLimit: number
+    hintsAllowed: number
+    spectatorMode: boolean
+    privateRoom: boolean
+    maxSpectators: number
+  }
 }
 
 interface SocketContextType {
   socket: Socket | null
   isConnected: boolean
   joinGame: (matchId: string) => void
-  makeMove: (row: number, col: number, value: number, gameStats?: {
+  makeMove: (row: number, col: number, value: number | null, gameStats?: {
     timeElapsed: number
     movesCount: number
     hintsUsed: number
     errorsCount: number
   }) => void
+  requestHint: () => void
+  setReady: (isReady: boolean) => void
+  sendMessage: (message: string) => void
+  surrender: () => void
   leaveGame: () => void
   gameState: GameState | null
+  roomState: RoomState | null
 }
 
 const SocketContext = createContext<SocketContextType>({
@@ -44,8 +67,13 @@ const SocketContext = createContext<SocketContextType>({
   isConnected: false,
   joinGame: () => {},
   makeMove: () => {},
+  requestHint: () => {},
+  setReady: () => {},
+  sendMessage: () => {},
+  surrender: () => {},
   leaveGame: () => {},
   gameState: null,
+  roomState: null,
 })
 
 export const useSocket = () => {
@@ -59,8 +87,9 @@ export const useSocket = () => {
 export function SocketProvider({ children }: { children: React.ReactNode }) {
   const [socket, setSocket] = useState<Socket | null>(null)
   const [isConnected, setIsConnected] = useState(false)
-  const [currentMatchId, setCurrentMatchId] = useState<string>('')
+  const currentMatchIdRef = useRef<string>('')
   const [gameState, setGameState] = useState<GameState | null>(null)
+  const [roomState, setRoomState] = useState<RoomState | null>(null)
   const { data: session } = useSession()
 
   useEffect(() => {
@@ -79,74 +108,147 @@ export function SocketProvider({ children }: { children: React.ReactNode }) {
       setIsConnected(false)
     })
 
-    socketInstance.on('joined-game', (data: GameState) => {
-      console.log('Joined game:', data)
-      setGameState(data)
+    // Enhanced game state handling
+    socketInstance.on('game-state', (data: RoomState) => {
+      console.log('Game state updated:', data)
+      setRoomState(data)
+      
+      // Convert room state to legacy game state for compatibility
+      setGameState({
+        matchId: currentMatchIdRef.current,
+        gameState: [], // Will be filled from actual game data
+        players: data.players.map(p => p.id),
+        currentPlayer: 0, // Will be determined by game logic
+        isActive: data.status === 'IN_PROGRESS'
+      })
     })
 
-    socketInstance.on('player-joined', (data: { userId: string; game: GameState }) => {
+    socketInstance.on('player-joined', (data: { userId: string; playerName: string; roomState: RoomState }) => {
       console.log('Player joined:', data)
-      setGameState(data.game)
+      setRoomState(data.roomState)
     })
 
-    socketInstance.on('move-made', (data: MoveData) => {
+    socketInstance.on('spectator-joined', (data: { userId: string; spectatorCount: number }) => {
+      console.log('Spectator joined:', data)
+    })
+
+    socketInstance.on('move-made', (data: { 
+      move: { 
+        playerId: string; 
+        row: number; 
+        col: number; 
+        value: number | null; 
+        timestamp: Date; 
+        isValid: boolean 
+      }; 
+      playerProgress: number[][]; 
+      playerStats: { 
+        moves: number; 
+        score: number; 
+        hintsUsed: number 
+      } 
+    }) => {
       console.log('Move made:', data)
-      setGameState(prev => prev ? {
-        ...prev,
-        gameState: data.gameState
-      } : null)
+      // Move data will be handled by the GameRoomManager through game-state updates
     })
 
-    socketInstance.on('player-left', (data: { userId: string }) => {
-      console.log('Player left:', data)
+    socketInstance.on('move-invalid', (data: { 
+      reason: string; 
+      move: { 
+        row: number; 
+        col: number; 
+        value: number | null 
+      } 
+    }) => {
+      console.log('Invalid move:', data)
+      // Handle invalid move feedback
+    })
+
+    socketInstance.on('hint-provided', (data: { row: number; col: number; value: number }) => {
+      console.log('Hint provided:', data)
+      // Handle hint
+    })
+
+    socketInstance.on('hint-used', (data: { 
+      playerId: string; 
+      hintsRemaining: number; 
+      hintCell: { row: number; col: number; value: number } 
+    }) => {
+      console.log('Hint used:', data)
+      // Update room state with new hints remaining
+    })
+
+    socketInstance.on('player-ready-changed', (data: { playerId: string; isReady: boolean; allReady: boolean }) => {
+      console.log('Player ready status changed:', data)
+      // Update room state
+    })
+
+    socketInstance.on('game-started', (data: { roomState: RoomState; countdown: number }) => {
+      console.log('Game started:', data)
+      setRoomState(data.roomState)
     })
 
     socketInstance.on('game-completed', (data: { 
-      winner: string; 
-      game: GameState;
-      completion?: {
-        matchId: string;
-        winnerId: string;
-        player1Score: {
-          playerId: string;
-          timeElapsed: number;
-          movesCount: number;
-          hintsUsed: number;
-          errorsCount: number;
-          isComplete: boolean;
-          finalScore: number;
-        };
-        player2Score: {
-          playerId: string;
-          timeElapsed: number;
-          movesCount: number;
-          hintsUsed: number;
-          errorsCount: number;
-          isComplete: boolean;
-          finalScore: number;
-        };
-        completedAt: Date;
-      }
+      winner: { 
+        id: string; 
+        name: string; 
+        score: number; 
+        stats: { 
+          moves: number; 
+          hintsUsed: number; 
+          timeSpent: number 
+        } 
+      }; 
+      roomState: RoomState 
     }) => {
       console.log('Game completed:', data)
-      setGameState(data.game)
-      
-      // Show completion notification
-      if (data.completion) {
-        console.log('Match finished:', data.completion)
-      }
+      setRoomState(data.roomState)
     })
 
-    socketInstance.on('match-result', (data: {
-      matchId: string;
-      winnerId: string;
-      scores: {
-        player1: number;
-        player2: number;
-      };
+    socketInstance.on('time-update', (data: { timeRemaining: number }) => {
+      console.log('Time update:', data)
+      // Update time remaining in room state
+      setRoomState(prev => prev ? {
+        ...prev,
+        gameState: {
+          ...prev.gameState,
+          timeRemaining: data.timeRemaining
+        }
+      } : null)
+    })
+
+    socketInstance.on('time-up', (data: { 
+      winner: { 
+        id: string; 
+        name: string; 
+        score: number 
+      }; 
+      roomState: RoomState 
     }) => {
-      console.log('Match result received:', data)
-      // Handle match completion result
+      console.log('Time up:', data)
+      setRoomState(data.roomState)
+    })
+
+    socketInstance.on('player-left', (data: { playerId: string; roomState: RoomState }) => {
+      console.log('Player left:', data)
+      setRoomState(data.roomState)
+    })
+
+    socketInstance.on('player-disconnected', (data: { userId: string; timestamp: string }) => {
+      console.log('Player disconnected:', data)
+    })
+
+    socketInstance.on('player-surrendered', (data: { playerId: string; timestamp: string }) => {
+      console.log('Player surrendered:', data)
+    })
+
+    socketInstance.on('message-received', (data: { playerId: string; playerName: string; message: string; timestamp: string }) => {
+      console.log('Message received:', data)
+      // Handle chat messages
+    })
+
+    socketInstance.on('error', (data: { message: string }) => {
+      console.error('Socket error:', data.message)
     })
 
     setSocket(socketInstance)
@@ -154,37 +256,27 @@ export function SocketProvider({ children }: { children: React.ReactNode }) {
     return () => {
       socketInstance.disconnect()
     }
-  }, [])
+  }, []) // Remove currentMatchId dependency
 
   const joinGame = (matchId: string) => {
     if (socket && session?.user?.id) {
-      setCurrentMatchId(matchId)
+      currentMatchIdRef.current = matchId
       socket.emit('join-game', { matchId, userId: session.user.id })
     }
   }
 
-  const makeMove = (row: number, col: number, value: number, gameStats?: {
+  const makeMove = (row: number, col: number, value: number | null, gameStats?: {
     timeElapsed: number
     movesCount: number
     hintsUsed: number
     errorsCount: number
   }) => {
-    if (socket && session?.user?.id && currentMatchId) {
-      const moveData = {
-        matchId: currentMatchId,
-        playerId: session.user.id,
-        row, 
-        col, 
-        value,
-        ...gameStats
-      }
-      
-      // Emit move to Socket.IO server
-      socket.emit('make-move', moveData)
+    if (socket) {
+      socket.emit('make-move', { row, col, value })
       
       // Also persist to API for game state tracking
-      if (gameStats) {
-        fetch(`/api/matches/${currentMatchId}/move`, {
+      if (gameStats && currentMatchIdRef.current) {
+        fetch(`/api/matches/${currentMatchIdRef.current}/move`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -206,14 +298,36 @@ export function SocketProvider({ children }: { children: React.ReactNode }) {
     }
   }
 
+  const requestHint = () => {
+    if (socket) {
+      socket.emit('request-hint')
+    }
+  }
+
+  const setReady = (isReady: boolean) => {
+    if (socket) {
+      socket.emit('set-ready', { isReady })
+    }
+  }
+
+  const sendMessage = (message: string) => {
+    if (socket) {
+      socket.emit('send-message', { message })
+    }
+  }
+
+  const surrender = () => {
+    if (socket) {
+      socket.emit('surrender')
+    }
+  }
+
   const leaveGame = () => {
-    if (socket && currentMatchId) {
-      socket.emit('leave-game', {
-        matchId: currentMatchId,
-        userId: session?.user?.id
-      })
-      setCurrentMatchId('')
+    if (socket && currentMatchIdRef.current) {
+      // The GameRoomManager will handle the leave through disconnect
+      currentMatchIdRef.current = ''
       setGameState(null)
+      setRoomState(null)
     }
   }
 
@@ -223,8 +337,13 @@ export function SocketProvider({ children }: { children: React.ReactNode }) {
       isConnected,
       joinGame,
       makeMove,
+      requestHint,
+      setReady,
+      sendMessage,
+      surrender,
       leaveGame,
-      gameState
+      gameState,
+      roomState
     }}>
       {children}
     </SocketContext.Provider>

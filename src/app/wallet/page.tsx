@@ -201,9 +201,9 @@ export default function WalletPage() {
     return new Promise((resolve) => {
       // Simulate payment processing time
       setTimeout(() => {
-        // Mock 90% success rate
-        resolve(Math.random() > 0.1)
-      }, 2000)
+        // Mock 100% success rate in development
+        resolve(true)
+      }, 1000)
     })
   }
 

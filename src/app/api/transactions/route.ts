@@ -18,12 +18,14 @@ export async function GET(request: NextRequest) {
     
     const skip = (page - 1) * limit
 
+    // Validate type parameter against enum values
+    const validTypes = ['ADD_FUNDS', 'WITHDRAW', 'MATCH_WIN', 'ENTRY_FEE', 'ADMIN_CREDIT', 'ADMIN_DEBIT']
     const where = {
       userId: session.user.id,
-      ...(type && { type })
+      ...(type && validTypes.includes(type) && { type: type as any })
     }
 
-    const [transactions, total] = await Promise.all([
+    const [rawTransactions, total] = await Promise.all([
       prisma.transaction.findMany({
         where,
         orderBy: { createdAt: 'desc' },
@@ -40,6 +42,12 @@ export async function GET(request: NextRequest) {
       }),
       prisma.transaction.count({ where })
     ])
+
+    // Map transaction types to CREDIT/DEBIT for frontend compatibility
+    const transactions = rawTransactions.map(transaction => ({
+      ...transaction,
+      type: ['ADD_FUNDS', 'MATCH_WIN', 'ADMIN_CREDIT'].includes(transaction.type) ? 'CREDIT' : 'DEBIT'
+    }))
 
     return NextResponse.json({
       transactions,

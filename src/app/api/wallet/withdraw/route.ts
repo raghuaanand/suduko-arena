@@ -53,12 +53,8 @@ export async function POST(request: NextRequest) {
           userId: session.user.id,
           amount,
           type: 'WITHDRAW',
-          description: `Wallet withdrawal - ₹${amount}`,
-          status: 'PENDING',
-          metadata: {
-            bankDetails,
-            withdrawalType: 'BANK_TRANSFER'
-          }
+          description: `Wallet withdrawal - ₹${amount} to ${bankDetails.accountNumber}`,
+          status: 'PENDING'
         }
       })
 
@@ -70,10 +66,10 @@ export async function POST(request: NextRequest) {
       transactionId: result.transaction.id,
       newBalance: result.newBalance
     })
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Withdrawal error:', error)
     
-    if (error.message === 'Insufficient balance') {
+    if (error instanceof Error && error.message === 'Insufficient balance') {
       return NextResponse.json({ error: 'Insufficient balance' }, { status: 400 })
     }
     

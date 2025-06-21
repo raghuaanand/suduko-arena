@@ -34,20 +34,36 @@ export default function CreateMatchPage() {
       })
 
       if (!response.ok) {
-        throw new Error('Failed to create match')
+        const errorText = await response.text()
+        console.error('Response error:', errorText)
+        throw new Error(`Failed to create match: ${response.status} ${response.statusText}`)
       }
 
       const data = await response.json()
+      console.log('API Response:', data) // Debug log
       
-      if (data.success && data.match) {
+      // Handle matchmaking responses
+      if (data.status === 'queued') {
+        // Player has been added to queue, show message and redirect to queue page
+        alert(data.message || 'Added to matchmaking queue. Please wait for an opponent...')
+        router.push('/play/multiplayer') // Redirect to multiplayer page to show queue status
+        return
+      }
+      
+      // Handle successful match creation/joining
+      if ((data.success && data.match) || (data.match && !data.hasOwnProperty('success'))) {
         // Redirect to the game room
-        router.push(`/game/${data.match.id}`)
+        const matchId = data.match.id
+        console.log('Redirecting to game:', matchId) // Debug log
+        router.push(`/game/${matchId}`)
       } else {
-        throw new Error(data.error || 'Failed to create match')
+        console.error('Invalid response format:', data) // Debug log
+        throw new Error(data.error || data.message || 'Failed to create match')
       }
     } catch (error) {
       console.error('Error creating match:', error)
-      alert('Failed to create match. Please try again.')
+      const errorMessage = error instanceof Error ? error.message : 'Failed to create match. Please try again.'
+      alert(errorMessage)
     } finally {
       setIsCreating(false)
     }

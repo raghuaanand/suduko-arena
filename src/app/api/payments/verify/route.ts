@@ -2,13 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
-
-// Mock Razorpay signature verification for development
-const verifyRazorpaySignature = () => {
-  // In production, you would verify the signature using Razorpay's webhook secret
-  // For development, we'll mock this as always successful
-  return true
-}
+import { verifyPaymentSignature } from '@/lib/razorpay'
 
 export async function POST(request: NextRequest) {
   try {
@@ -25,7 +19,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Verify Razorpay signature
-    const isValid = verifyRazorpaySignature()
+    const isValid = verifyPaymentSignature(orderId, paymentId, signature)
 
     if (!isValid) {
       return NextResponse.json({ error: 'Invalid payment signature' }, { status: 400 })
@@ -51,7 +45,7 @@ export async function POST(request: NextRequest) {
         where: { id: transactionId },
         data: {
           status: 'COMPLETED',
-          razorpayPaymentId: paymentId
+          razorpayId: paymentId
         }
       })
 
