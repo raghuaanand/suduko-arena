@@ -2,16 +2,15 @@
 
 import { GameRoom } from '@/components/GameRoom'
 import { SocketProvider } from '@/contexts/SocketContext'
-import { use } from 'react'
 
 interface GamePageProps {
-  params: Promise<{
+  params: {
     id: string
-  }>
+  }
 }
 
 export default function GamePage({ params }: GamePageProps) {
-  const { id } = use(params)
+  const { id } = params
   
   return (
     <SocketProvider>

@@ -235,7 +235,7 @@ export const SudokuGridComponent: React.FC<SudokuGridProps> = ({
       <div className="text-center space-y-2">
         {isComplete(grid) && (
           <div className="text-green-600 dark:text-green-400 font-bold text-lg">
-            🎉 Puzzle Completed!
+             Puzzle Completed!
           </div>
         )}
         {errors.size > 0 && (
