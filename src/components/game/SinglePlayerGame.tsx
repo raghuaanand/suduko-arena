@@ -1,13 +1,12 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
-import { useSession } from 'next-auth/react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { SudokuGridComponent } from '@/components/sudoku/SudokuGrid'
 import { AIPlayer } from '@/lib/aiPlayer'
-import { generatePuzzle, solveSudoku } from '@/utils/sudoku'
+import { generatePuzzle } from '@/utils/sudoku'
 import {
   Bot,
   Timer,
@@ -29,7 +28,6 @@ export default function SinglePlayerGame({
   difficulty, 
   onGameComplete 
 }: SinglePlayerGameProps) {
-  const { data: session } = useSession()
   const [gameGrid, setGameGrid] = useState<number[][]>([])
   const [originalGrid, setOriginalGrid] = useState<number[][]>([])
   const [solution, setSolution] = useState<number[][]>([])
@@ -43,10 +41,72 @@ export default function SinglePlayerGame({
   const [gameComplete, setGameComplete] = useState(false)
   const [winner, setWinner] = useState<'player' | 'ai' | null>(null)
 
+  const calculateScore = useCallback((): number => {
+    const baseScore = 1000
+    const timeBonus = Math.max(0, 1800 - timeElapsed) // Max 30 min
+    const movesPenalty = playerMoves * 2
+    const hintsPenalty = hintsUsed * 50
+    
+    return Math.max(100, baseScore + timeBonus - movesPenalty - hintsPenalty)
+  }, [timeElapsed, playerMoves, hintsUsed])
+
+  // Convert number[][] to SudokuGrid for component props
+  const convertToSudokuGrid = (grid: number[][]): (number | null)[][] => {
+    return grid.map(row => row.map(cell => cell === 0 ? null : cell))
+  }
+
+  const isGridComplete = (grid: number[][]): boolean => {
+    for (let row = 0; row < 9; row++) {
+      for (let col = 0; col < 9; col++) {
+        if (grid[row][col] === 0) return false
+      }
+    }
+    return true
+  }
+
+  const initializeGame = useCallback(() => {
+    const puzzleData = generatePuzzle(difficulty)
+    
+    // Convert SudokuGrid (with nulls) to number[][] (with 0s)
+    const convertToNumberGrid = (grid: (number | null)[][]) => 
+      grid.map(row => row.map(cell => cell === null ? 0 : cell))
+    
+    setGameGrid(convertToNumberGrid(puzzleData.puzzle))
+    setOriginalGrid(convertToNumberGrid(puzzleData.puzzle))
+    setAiProgress(convertToNumberGrid(puzzleData.puzzle))
+    setSolution(convertToNumberGrid(puzzleData.solution))
+    setAiPlayer(new AIPlayer(difficulty))
+    setTimeElapsed(0)
+    setPlayerMoves(0)
+    setHintsUsed(0)
+    setGameComplete(false)
+    setWinner(null)
+    setIsPlaying(false)
+    setIsPaused(false)
+  }, [difficulty])
+
+  const handleGridChange = useCallback((newGrid: (number | null)[][]) => {
+    // Convert SudokuGrid (number | null)[][] to number[][] for internal state
+    const numberGrid = newGrid.map(row => row.map(cell => cell === null ? 0 : cell))
+    setGameGrid(numberGrid)
+    setPlayerMoves(prev => prev + 1)
+
+    // Check if player completed
+    if (isGridComplete(numberGrid)) {
+      setGameComplete(true)
+      setWinner('player')
+      setIsPlaying(false)
+      
+      // Calculate score
+      const score = calculateScore()
+      onGameComplete?.(score, timeElapsed)
+    }
+  }, [timeElapsed, onGameComplete, calculateScore])
+
   // Initialize game
   useEffect(() => {
     initializeGame()
-  }, [difficulty])
+  }, [initializeGame])
 
   // Timer effect
   useEffect(() => {
@@ -87,61 +147,9 @@ export default function SinglePlayerGame({
       }
     }
 
-    const aiMoveTimeout = setTimeout(makeAIMove, aiPlayer.config.moveDelay)
+    const aiMoveTimeout = setTimeout(makeAIMove, aiPlayer.getCurrentMoveDelay())
     return () => clearTimeout(aiMoveTimeout)
   }, [aiProgress, isPlaying, isPaused, gameComplete, aiPlayer, solution])
-
-  const initializeGame = () => {
-    const puzzle = generatePuzzle(difficulty)
-    const puzzleSolution = solveSudoku(puzzle.map(row => [...row]))
-    
-    setGameGrid(puzzle.map(row => [...row]))
-    setOriginalGrid(puzzle.map(row => [...row]))
-    setAiProgress(puzzle.map(row => [...row]))
-    setSolution(puzzleSolution || puzzle)
-    setAiPlayer(new AIPlayer(difficulty))
-    setTimeElapsed(0)
-    setPlayerMoves(0)
-    setHintsUsed(0)
-    setGameComplete(false)
-    setWinner(null)
-    setIsPlaying(false)
-    setIsPaused(false)
-  }
-
-  const isGridComplete = (grid: number[][]): boolean => {
-    for (let row = 0; row < 9; row++) {
-      for (let col = 0; col < 9; col++) {
-        if (grid[row][col] === 0) return false
-      }
-    }
-    return true
-  }
-
-  const handleGridChange = useCallback((newGrid: number[][]) => {
-    setGameGrid(newGrid)
-    setPlayerMoves(prev => prev + 1)
-
-    // Check if player completed
-    if (isGridComplete(newGrid)) {
-      setGameComplete(true)
-      setWinner('player')
-      setIsPlaying(false)
-      
-      // Calculate score
-      const score = calculateScore()
-      onGameComplete?.(score, timeElapsed)
-    }
-  }, [timeElapsed, onGameComplete])
-
-  const calculateScore = (): number => {
-    const baseScore = 1000
-    const timeBonus = Math.max(0, 1800 - timeElapsed) // Max 30 min
-    const movesPenalty = playerMoves * 2
-    const hintsPenalty = hintsUsed * 50
-    
-    return Math.max(100, baseScore + timeBonus - movesPenalty - hintsPenalty)
-  }
 
   const handleStartGame = () => {
     setIsPlaying(true)
@@ -224,8 +232,8 @@ export default function SinglePlayerGame({
               </CardHeader>
               <CardContent>
                 <SudokuGridComponent
-                  grid={gameGrid}
-                  originalGrid={originalGrid}
+                  grid={convertToSudokuGrid(gameGrid)}
+                  solution={convertToSudokuGrid(originalGrid)}
                   onGridChange={handleGridChange}
                   isReadonly={!isPlaying || isPaused || gameComplete}
                   className="w-full max-w-md mx-auto"
@@ -324,8 +332,8 @@ export default function SinglePlayerGame({
               </CardHeader>
               <CardContent>
                 <SudokuGridComponent
-                  grid={aiProgress}
-                  originalGrid={originalGrid}
+                  grid={convertToSudokuGrid(aiProgress)}
+                  solution={convertToSudokuGrid(originalGrid)}
                   isReadonly={true}
                   className="w-full max-w-md mx-auto"
                 />

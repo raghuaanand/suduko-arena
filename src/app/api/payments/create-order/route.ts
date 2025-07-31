@@ -2,18 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
-
-// Mock Razorpay implementation for development
-// In production, you would use the actual Razorpay SDK
-const createRazorpayOrder = async (amount: number) => {
-  // Mock order creation
-  return {
-    id: `order_${Date.now()}`,
-    amount: amount * 100, // Razorpay uses paisa
-    currency: 'INR',
-    status: 'created'
-  }
-}
+import { createRazorpayOrder } from '@/lib/razorpay'
 
 export async function POST(request: NextRequest) {
   try {
@@ -30,7 +19,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Create Razorpay order
-    const order = await createRazorpayOrder(amount)
+    const order = await createRazorpayOrder(amount, session.user.id, `Wallet recharge - ₹${amount}`)
 
     // Save pending transaction
     const transaction = await prisma.transaction.create({
@@ -40,7 +29,7 @@ export async function POST(request: NextRequest) {
         type: 'ADD_FUNDS',
         description: `Wallet recharge - ₹${amount}`,
         status: 'PENDING',
-        razorpayOrderId: order.id
+        razorpayId: order.id
       }
     })
 
@@ -49,8 +38,7 @@ export async function POST(request: NextRequest) {
       amount: order.amount,
       currency: order.currency,
       transactionId: transaction.id,
-      // Mock Razorpay key for development
-      razorpayKey: 'rzp_test_mock_key'
+      razorpayKey: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID || 'rzp_test_mock_key'
     })
   } catch (error) {
     console.error('Payment initiation error:', error)

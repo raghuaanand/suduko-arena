@@ -206,7 +206,7 @@ export class GameScoringService {
 
     // Check columns
     for (let col = 0; col < 9; col++) {
-      const numbers = new Set()
+      const numbers = new Set<number>()
       for (let row = 0; row < 9; row++) {
         numbers.add(grid[row][col])
       }
@@ -216,7 +216,7 @@ export class GameScoringService {
     // Check 3x3 boxes
     for (let boxRow = 0; boxRow < 3; boxRow++) {
       for (let boxCol = 0; boxCol < 3; boxCol++) {
-        const numbers = new Set()
+        const numbers = new Set<number>()
         for (let row = boxRow * 3; row < (boxRow + 1) * 3; row++) {
           for (let col = boxCol * 3; col < (boxCol + 1) * 3; col++) {
             numbers.add(grid[row][col])

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -41,6 +41,35 @@ export default function PlayMultiplayer() {
   const [loading, setLoading] = useState(false)
   const [creating, setCreating] = useState(false)
   const [selectedDifficulty, setSelectedDifficulty] = useState<'easy' | 'medium' | 'hard'>('medium')
+  const [queueStatus, setQueueStatus] = useState<{
+    inQueue: boolean
+    position?: number
+    waitTime?: number
+    estimatedTime?: number
+    message?: string
+  }>({ inQueue: false })
+
+  const checkQueueStatus = useCallback(async () => {
+    if (!session?.user?.id) return
+    
+    try {
+      const response = await fetch('/api/matches/queue-status')
+      if (response.ok) {
+        const data = await response.json()
+        if (data.inQueue) {
+          setQueueStatus({
+            inQueue: true,
+            position: data.position,
+            waitTime: data.waitTime,
+            estimatedTime: data.estimatedTime,
+            message: data.message || 'Waiting for opponent...'
+          })
+        }
+      }
+    } catch (error) {
+      console.error('Error checking queue status:', error)
+    }
+  }, [session?.user?.id])
 
   useEffect(() => {
     if (!session) {
@@ -48,7 +77,9 @@ export default function PlayMultiplayer() {
       return
     }
     fetchMatches()
-  }, [session, router])
+    // Check if user is in queue when page loads
+    checkQueueStatus()
+  }, [session, router, checkQueueStatus])
 
   const fetchMatches = async () => {
     setLoading(true)
@@ -80,10 +111,22 @@ export default function PlayMultiplayer() {
 
       if (response.ok) {
         const data = await response.json()
-        const match = data.match
         
-        // Navigate to the game room
-        router.push(`/game/${match.id}`)
+        if (data.status === 'matched') {
+          // Immediate match found
+          const match = data.match
+          alert('Match found! Starting game...')
+          router.push(`/game/${match.id}`)
+        } else if (data.status === 'queued') {
+          // Added to queue, show waiting message
+          alert(`Added to matchmaking queue. Looking for opponents...`)
+          // Start polling for match or redirect to a queue page
+          startMatchPolling()
+        } else {
+          // Single match created or joined existing
+          const match = data.match
+          router.push(`/game/${match.id}`)
+        }
       } else {
         const error = await response.json()
         alert(`Error creating match: ${error.message}`)
@@ -94,6 +137,39 @@ export default function PlayMultiplayer() {
     } finally {
       setCreating(false)
     }
+  }
+
+  const startMatchPolling = () => {
+    // Poll every 3 seconds for match updates
+    const pollInterval = setInterval(async () => {
+      try {
+        const response = await fetch('/api/matches/queue-status')
+        if (response.ok) {
+          const data = await response.json()
+          if (data.matchFound) {
+            clearInterval(pollInterval)
+            alert('Match found! Starting game...')
+            router.push(`/game/${data.matchId}`)
+          } else if (data.inQueue) {
+            setQueueStatus({
+              inQueue: true,
+              position: data.position,
+              waitTime: data.waitTime,
+              estimatedTime: data.estimatedTime,
+              message: data.message || 'Waiting for opponent...'
+            })
+          }
+        }
+      } catch (error) {
+        console.error('Error polling for match:', error)
+      }
+    }, 3000)
+    
+    // Stop polling after 2 minutes
+    setTimeout(() => {
+      clearInterval(pollInterval)
+      alert('Matchmaking timeout. Please try again.')
+    }, 120000)
   }
 
   const joinMatch = (matchId: string) => {
@@ -345,6 +421,31 @@ export default function PlayMultiplayer() {
           </Card>
 
         </div>
+
+        {/* Queue Status */}
+        {queueStatus.inQueue && (
+          <Card className="mt-6">
+            <CardContent className="text-center">
+              <div className="text-sm text-gray-500 mb-2">
+                {queueStatus.message}
+              </div>
+              <div className="flex justify-center space-x-4">
+                <div>
+                  <div className="text-lg font-bold text-blue-600">
+                    {queueStatus.position}
+                  </div>
+                  <div className="text-xs text-gray-400">Position in queue</div>
+                </div>
+                <div>
+                  <div className="text-lg font-bold text-green-600">
+                    {queueStatus.estimatedTime ? `${queueStatus.estimatedTime} sec` : '--'}
+                  </div>
+                  <div className="text-xs text-gray-400">Estimated wait time</div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
         {/* Stats Section */}
         <Card className="mt-6">

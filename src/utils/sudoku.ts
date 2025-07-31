@@ -11,16 +11,29 @@ export function createEmptyGrid(): SudokuGrid {
  * Check if a number can be placed at a specific position
  */
 export function isValidMove(grid: SudokuGrid, row: number, col: number, num: number): boolean {
+  // Safety check: ensure grid is defined and has proper structure
+  if (!grid || !Array.isArray(grid) || grid.length !== 9) {
+    return false
+  }
+  
+  if (row < 0 || row >= 9 || col < 0 || col >= 9) {
+    return false
+  }
+  
+  if (num < 1 || num > 9) {
+    return false
+  }
+
   // Check row
   for (let x = 0; x < 9; x++) {
-    if (grid[row][x] === num) {
+    if (Array.isArray(grid[row]) && grid[row][x] === num) {
       return false
     }
   }
 
   // Check column
   for (let x = 0; x < 9; x++) {
-    if (grid[x][col] === num) {
+    if (Array.isArray(grid[x]) && grid[x][col] === num) {
       return false
     }
   }
@@ -30,7 +43,7 @@ export function isValidMove(grid: SudokuGrid, row: number, col: number, num: num
   const startCol = col - (col % 3)
   for (let i = 0; i < 3; i++) {
     for (let j = 0; j < 3; j++) {
-      if (grid[i + startRow][j + startCol] === num) {
+      if (Array.isArray(grid[i + startRow]) && grid[i + startRow][j + startCol] === num) {
         return false
       }
     }
@@ -43,10 +56,20 @@ export function isValidMove(grid: SudokuGrid, row: number, col: number, num: num
  * Check if the current grid state is valid (no conflicts)
  */
 export function isValidGrid(grid: SudokuGrid): boolean {
+  // Safety check: ensure grid is defined and has proper structure
+  if (!grid || !Array.isArray(grid) || grid.length !== 9) {
+    return false
+  }
+  
   for (let row = 0; row < 9; row++) {
+    // Safety check: ensure row exists and is an array
+    if (!Array.isArray(grid[row]) || grid[row].length !== 9) {
+      return false
+    }
+    
     for (let col = 0; col < 9; col++) {
       const num = grid[row][col]
-      if (num !== null) {
+      if (num !== null && num !== 0 && num !== undefined) {
         // Temporarily remove the number and check if it can be placed
         grid[row][col] = null
         const valid = isValidMove(grid, row, col, num)
@@ -64,9 +87,20 @@ export function isValidGrid(grid: SudokuGrid): boolean {
  * Check if the Sudoku is complete (all cells filled and valid)
  */
 export function isComplete(grid: SudokuGrid): boolean {
+  // Safety check: ensure grid is defined and has proper structure
+  if (!grid || !Array.isArray(grid) || grid.length !== 9) {
+    return false
+  }
+  
   for (let row = 0; row < 9; row++) {
+    // Safety check: ensure row exists and is an array
+    if (!Array.isArray(grid[row]) || grid[row].length !== 9) {
+      return false
+    }
+    
     for (let col = 0; col < 9; col++) {
-      if (grid[row][col] === null) {
+      // Check for empty cells (null, 0, or undefined)
+      if (grid[row][col] === null || grid[row][col] === 0 || grid[row][col] === undefined) {
         return false
       }
     }
@@ -280,27 +314,375 @@ export function getPossibleValues(grid: SudokuGrid, row: number, col: number): n
 }
 
 /**
- * Get hint for the next move
+ * Get hint for the next move with different strategies
  */
-export function getHint(grid: SudokuGrid): { row: number; col: number; value: number } | null {
+export function getHint(grid: SudokuGrid, strategy: 'easy' | 'logical' | 'random' = 'logical'): { row: number; col: number; value: number; strategy: string } | null {
   const emptyCells = getEmptyCells(grid)
   
-  // Find a cell with only one possible value
+  if (emptyCells.length === 0) return null
+
+  switch (strategy) {
+    case 'easy':
+      return getEasyHint(grid, emptyCells)
+    case 'logical':
+      return getLogicalHint(grid, emptyCells)
+    case 'random':
+      return getRandomHint(grid, emptyCells)
+    default:
+      return getLogicalHint(grid, emptyCells)
+  }
+}
+
+/**
+ * Get easy hint - cells with only one possibility
+ */
+function getEasyHint(grid: SudokuGrid, emptyCells: [number, number][]): { row: number; col: number; value: number; strategy: string } | null {
   for (const [row, col] of emptyCells) {
     const possible = getPossibleValues(grid, row, col)
     if (possible.length === 1) {
-      return { row, col, value: possible[0] }
+      return { row, col, value: possible[0], strategy: 'naked_single' }
     }
   }
+  return null
+}
+
+/**
+ * Get logical hint using various Sudoku solving techniques
+ */
+function getLogicalHint(grid: SudokuGrid, emptyCells: [number, number][]): { row: number; col: number; value: number; strategy: string } | null {
+  // Strategy 1: Naked Singles
+  const nakedSingle = getEasyHint(grid, emptyCells)
+  if (nakedSingle) return nakedSingle
+
+  // Strategy 2: Hidden Singles in rows
+  for (let row = 0; row < 9; row++) {
+    const hint = findHiddenSingleInRow(grid, row)
+    if (hint) return { ...hint, strategy: 'hidden_single_row' }
+  }
+
+  // Strategy 3: Hidden Singles in columns  
+  for (let col = 0; col < 9; col++) {
+    const hint = findHiddenSingleInCol(grid, col)
+    if (hint) return { ...hint, strategy: 'hidden_single_col' }
+  }
+
+  // Strategy 4: Hidden Singles in boxes
+  for (let box = 0; box < 9; box++) {
+    const hint = findHiddenSingleInBox(grid, box)
+    if (hint) return { ...hint, strategy: 'hidden_single_box' }
+  }
+
+  // Strategy 5: Pointing Pairs/Triples
+  const pointingHint = findPointingPairs(grid)
+  if (pointingHint) return { ...pointingHint, strategy: 'pointing_pairs' }
+
+  // Fallback to random hint
+  return getRandomHint(grid, emptyCells)
+}
+
+/**
+ * Get random hint
+ */
+function getRandomHint(grid: SudokuGrid, emptyCells: [number, number][]): { row: number; col: number; value: number; strategy: string } | null {
+  if (emptyCells.length === 0) return null
   
-  // If no obvious move, return a random empty cell with its first possible value
-  if (emptyCells.length > 0) {
-    const [row, col] = emptyCells[Math.floor(Math.random() * emptyCells.length)]
-    const possible = getPossibleValues(grid, row, col)
-    if (possible.length > 0) {
-      return { row, col, value: possible[0] }
+  const [row, col] = emptyCells[Math.floor(Math.random() * emptyCells.length)]
+  const possible = getPossibleValues(grid, row, col)
+  
+  if (possible.length > 0) {
+    return { 
+      row, 
+      col, 
+      value: possible[Math.floor(Math.random() * possible.length)], 
+      strategy: 'random' 
     }
   }
   
   return null
+}
+
+/**
+ * Find hidden single in row
+ */
+function findHiddenSingleInRow(grid: SudokuGrid, row: number): { row: number; col: number; value: number } | null {
+  for (let num = 1; num <= 9; num++) {
+    const possibleCols = []
+    for (let col = 0; col < 9; col++) {
+      if (grid[row][col] === null && isValidMove(grid, row, col, num)) {
+        possibleCols.push(col)
+      }
+    }
+    if (possibleCols.length === 1) {
+      return { row, col: possibleCols[0], value: num }
+    }
+  }
+  return null
+}
+
+/**
+ * Find hidden single in column
+ */
+function findHiddenSingleInCol(grid: SudokuGrid, col: number): { row: number; col: number; value: number } | null {
+  for (let num = 1; num <= 9; num++) {
+    const possibleRows = []
+    for (let row = 0; row < 9; row++) {
+      if (grid[row][col] === null && isValidMove(grid, row, col, num)) {
+        possibleRows.push(row)
+      }
+    }
+    if (possibleRows.length === 1) {
+      return { row: possibleRows[0], col, value: num }
+    }
+  }
+  return null
+}
+
+/**
+ * Find hidden single in 3x3 box
+ */
+function findHiddenSingleInBox(grid: SudokuGrid, boxIndex: number): { row: number; col: number; value: number } | null {
+  const startRow = Math.floor(boxIndex / 3) * 3
+  const startCol = (boxIndex % 3) * 3
+  
+  for (let num = 1; num <= 9; num++) {
+    const possibleCells = []
+    for (let row = startRow; row < startRow + 3; row++) {
+      for (let col = startCol; col < startCol + 3; col++) {
+        if (grid[row][col] === null && isValidMove(grid, row, col, num)) {
+          possibleCells.push({ row, col })
+        }
+      }
+    }
+    if (possibleCells.length === 1) {
+      return { row: possibleCells[0].row, col: possibleCells[0].col, value: num }
+    }
+  }
+  return null
+}
+
+/**
+ * Find pointing pairs/triples (advanced technique)
+ */
+function findPointingPairs(grid: SudokuGrid): { row: number; col: number; value: number } | null {
+  // This is a simplified implementation
+  // In a full implementation, this would identify eliminations rather than direct placements
+  return null
+}
+
+/**
+ * Analyze grid difficulty based on required techniques
+ */
+export function analyzeGridDifficulty(grid: SudokuGrid): {
+  difficulty: 'easy' | 'medium' | 'hard' | 'expert'
+  requiredTechniques: string[]
+  score: number
+} {
+  const techniques = []
+  let score = 0
+  const gridCopy = grid.map(row => [...row])
+  
+  // Check for naked singles
+  const nakedSingles = countNakedSingles(gridCopy)
+  if (nakedSingles > 0) {
+    techniques.push('naked_singles')
+    score += nakedSingles
+  }
+  
+  // Check for hidden singles
+  const hiddenSingles = countHiddenSingles(gridCopy)
+  if (hiddenSingles > 0) {
+    techniques.push('hidden_singles')
+    score += hiddenSingles * 2
+  }
+  
+  // Determine difficulty
+  let difficulty: 'easy' | 'medium' | 'hard' | 'expert'
+  if (score <= 30) difficulty = 'easy'
+  else if (score <= 60) difficulty = 'medium'
+  else if (score <= 100) difficulty = 'hard'
+  else difficulty = 'expert'
+  
+  return { difficulty, requiredTechniques: techniques, score }
+}
+
+/**
+ * Count naked singles in grid
+ */
+function countNakedSingles(grid: SudokuGrid): number {
+  let count = 0
+  for (let row = 0; row < 9; row++) {
+    for (let col = 0; col < 9; col++) {
+      if (grid[row][col] === null) {
+        const possible = getPossibleValues(grid, row, col)
+        if (possible.length === 1) count++
+      }
+    }
+  }
+  return count
+}
+
+/**
+ * Count hidden singles in grid
+ */
+function countHiddenSingles(grid: SudokuGrid): number {
+  let count = 0
+  
+  // Check rows
+  for (let row = 0; row < 9; row++) {
+    if (findHiddenSingleInRow(grid, row)) count++
+  }
+  
+  // Check columns
+  for (let col = 0; col < 9; col++) {
+    if (findHiddenSingleInCol(grid, col)) count++
+  }
+  
+  // Check boxes
+  for (let box = 0; box < 9; box++) {
+    if (findHiddenSingleInBox(grid, box)) count++
+  }
+  
+  return count
+}
+
+/**
+ * Check for common Sudoku errors
+ */
+export function checkForErrors(grid: SudokuGrid): {
+  hasErrors: boolean
+  errors: Array<{ row: number; col: number; type: string; description: string }>
+} {
+  const errors = []
+  
+  // Check for duplicate numbers in rows
+  for (let row = 0; row < 9; row++) {
+    const seen = new Map()
+    for (let col = 0; col < 9; col++) {
+      const value = grid[row][col]
+      if (value !== null) {
+        if (seen.has(value)) {
+          errors.push({
+            row,
+            col,
+            type: 'duplicate_row',
+            description: `Duplicate ${value} in row ${row + 1}`
+          })
+          errors.push({
+            row,
+            col: seen.get(value),
+            type: 'duplicate_row',
+            description: `Duplicate ${value} in row ${row + 1}`
+          })
+        } else {
+          seen.set(value, col)
+        }
+      }
+    }
+  }
+  
+  // Check for duplicate numbers in columns
+  for (let col = 0; col < 9; col++) {
+    const seen = new Map()
+    for (let row = 0; row < 9; row++) {
+      const value = grid[row][col]
+      if (value !== null) {
+        if (seen.has(value)) {
+          errors.push({
+            row,
+            col,
+            type: 'duplicate_col',
+            description: `Duplicate ${value} in column ${col + 1}`
+          })
+          errors.push({
+            row: seen.get(value),
+            col,
+            type: 'duplicate_col',
+            description: `Duplicate ${value} in column ${col + 1}`
+          })
+        } else {
+          seen.set(value, row)
+        }
+      }
+    }
+  }
+  
+  // Check for duplicate numbers in 3x3 boxes
+  for (let boxRow = 0; boxRow < 3; boxRow++) {
+    for (let boxCol = 0; boxCol < 3; boxCol++) {
+      const seen = new Map()
+      for (let row = boxRow * 3; row < (boxRow + 1) * 3; row++) {
+        for (let col = boxCol * 3; col < (boxCol + 1) * 3; col++) {
+          const value = grid[row][col]
+          if (value !== null) {
+            if (seen.has(value)) {
+              errors.push({
+                row,
+                col,
+                type: 'duplicate_box',
+                description: `Duplicate ${value} in 3x3 box`
+              })
+              const prevPos = seen.get(value)
+              errors.push({
+                row: prevPos.row,
+                col: prevPos.col,
+                type: 'duplicate_box',
+                description: `Duplicate ${value} in 3x3 box`
+              })
+            } else {
+              seen.set(value, { row, col })
+            }
+          }
+        }
+      }
+    }
+  }
+  
+  return {
+    hasErrors: errors.length > 0,
+    errors
+  }
+}
+
+/**
+ * Save game state to localStorage
+ */
+export function saveGameState(gameId: string, state: any): void {
+  try {
+    localStorage.setItem(`sudoku_game_${gameId}`, JSON.stringify({
+      ...state,
+      timestamp: Date.now()
+    }))
+  } catch (error) {
+    console.error('Failed to save game state:', error)
+  }
+}
+
+/**
+ * Load game state from localStorage
+ */
+export function loadGameState(gameId: string): any | null {
+  try {
+    const saved = localStorage.getItem(`sudoku_game_${gameId}`)
+    if (saved) {
+      const state = JSON.parse(saved)
+      // Check if saved state is not too old (24 hours)
+      if (Date.now() - state.timestamp < 24 * 60 * 60 * 1000) {
+        return state
+      }
+    }
+  } catch (error) {
+    console.error('Failed to load game state:', error)
+  }
+  return null
+}
+
+/**
+ * Clear saved game state
+ */
+export function clearGameState(gameId: string): void {
+  try {
+    localStorage.removeItem(`sudoku_game_${gameId}`)
+  } catch (error) {
+    console.error('Failed to clear game state:', error)
+  }
 }

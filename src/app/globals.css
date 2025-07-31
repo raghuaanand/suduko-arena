@@ -316,4 +316,100 @@
       grid-template-columns: repeat(4, 1fr);
     }
   }
+
+  /* Arcane Night Theme Custom Animations */
+  @keyframes float {
+    0%, 100% { transform: translateY(0px); }
+    50% { transform: translateY(-10px); }
+  }
+
+  @keyframes glow {
+    0%, 100% { box-shadow: 0 0 20px rgba(223, 191, 255, 0.3); }
+    50% { box-shadow: 0 0 30px rgba(223, 191, 255, 0.6); }
+  }
+
+  @keyframes mystical-pulse {
+    0%, 100% { 
+      box-shadow: 0 0 20px rgba(95, 75, 139, 0.4), 
+                  0 0 40px rgba(223, 191, 255, 0.2);
+    }
+    50% { 
+      box-shadow: 0 0 30px rgba(95, 75, 139, 0.6), 
+                  0 0 60px rgba(223, 191, 255, 0.4);
+    }
+  }
+
+  .animate-float {
+    animation: float 3s ease-in-out infinite;
+  }
+
+  .animate-glow {
+    animation: glow 2s ease-in-out infinite;
+  }
+
+  .animate-mystical-pulse {
+    animation: mystical-pulse 2s ease-in-out infinite;
+  }
+
+  /* Custom gradient text effects */
+  .text-arcane-gradient {
+    background: linear-gradient(135deg, #dfbfff, #e09f3e, #dfbfff);
+    background-size: 200% 200%;
+    animation: gradient-shift 3s ease infinite;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  @keyframes gradient-shift {
+    0% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
+  }
+
+  /* Magical border effects */
+  .border-magical {
+    border: 2px solid transparent;
+    background: linear-gradient(#0f0e1c, #16213e) padding-box,
+                linear-gradient(135deg, #5f4b8b, #dfbfff, #e09f3e) border-box;
+  }
+
+  /* Mystical card hover effects */
+  .card-mystical:hover {
+    transform: translateY(-5px) scale(1.02);
+    box-shadow: 0 20px 40px rgba(95, 75, 139, 0.3),
+                0 0 30px rgba(223, 191, 255, 0.2);
+  }
+
+  /* Sparkling animation for magical elements */
+  @keyframes sparkle {
+    0%, 100% { opacity: 0; transform: scale(0); }
+    50% { opacity: 1; transform: scale(1); }
+  }
+
+  .sparkle::before {
+    content: '✨';
+    position: absolute;
+    animation: sparkle 2s ease-in-out infinite;
+    font-size: 0.8rem;
+  }
+
+  /* Custom scrollbar for the mystical theme */
+  ::-webkit-scrollbar {
+    width: 12px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: linear-gradient(135deg, #0f0e1c, #16213e);
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: linear-gradient(135deg, #5f4b8b, #dfbfff);
+    border-radius: 6px;
+    border: 2px solid #0f0e1c;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background: linear-gradient(135deg, #dfbfff, #e09f3e);
+  }
 }

@@ -46,7 +46,8 @@ export async function POST(request: NextRequest) {
         }
       })
       
-      return NextResponse.json({ match }, { status: 201 })
+      console.log('Single player match created:', { matchId: match.id, type, status: 201 })
+      return NextResponse.json({ success: true, match }, { status: 201 })
     }
 
     // For multiplayer matches, check if entry fee is valid
@@ -79,7 +80,7 @@ export async function POST(request: NextRequest) {
             }
           })
           
-          return NextResponse.json({ match, status: 'matched' }, { status: 200 })
+          return NextResponse.json({ success: true, match, status: 'matched' }, { status: 200 })
         } else {
           // Added to queue, waiting for opponent
           return NextResponse.json({ 
@@ -166,7 +167,7 @@ export async function POST(request: NextRequest) {
         })
       })
 
-      return NextResponse.json({ match: updatedMatch }, { status: 200 })
+      return NextResponse.json({ success: true, match: updatedMatch }, { status: 200 })
     }
 
     // Create new waiting match
@@ -187,7 +188,7 @@ export async function POST(request: NextRequest) {
       }
     })
 
-    return NextResponse.json({ match }, { status: 201 })
+    return NextResponse.json({ success: true, match }, { status: 201 })
   } catch (error) {
     if (error instanceof z.ZodError) {
       return NextResponse.json(

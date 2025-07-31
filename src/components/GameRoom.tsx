@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import { useSocket } from '@/contexts/SocketContext'
@@ -11,9 +11,14 @@ import { SudokuGridComponent } from '@/components/sudoku/SudokuGrid'
 import { 
   Users, 
   Trophy, 
-  AlertCircle,
   Timer,
-  Crown
+  Crown,
+  MessageCircle,
+  Lightbulb,
+  Flag,
+  CheckCircle,
+  Wifi,
+  WifiOff
 } from 'lucide-react'
 
 interface GameRoomProps {
@@ -23,37 +28,30 @@ interface GameRoomProps {
 export function GameRoom({ matchId }: GameRoomProps) {
   const { data: session } = useSession()
   const router = useRouter()
-  const { socket, isConnected, joinGame, makeMove, leaveGame, gameState } = useSocket()
+  const { 
+    socket, 
+    isConnected, 
+    makeMove, 
+    leaveGame, 
+    gameState,
+    roomState,
+    requestHint,
+    setReady,
+    surrender,
+    sendMessage
+  } = useSocket()
   
-  const [match, setMatch] = useState<any>(null)
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
   const [messages, setMessages] = useState<string[]>([])
   const [timeLeft, setTimeLeft] = useState<number>(1800) // 30 minutes
+  const [chatVisible, setChatVisible] = useState(false)
+  const [isPlayerReady, setIsPlayerReady] = useState(false)
+  const [showSurrenderConfirm, setShowSurrenderConfirm] = useState(false)
+  const [chatMessage, setChatMessage] = useState('')
+  const [initialGrid, setInitialGrid] = useState<number[][] | null>(null)
 
-  const addMessage = (message: string) => {
+  const addMessage = useCallback((message: string) => {
     setMessages(prev => [...prev, `${new Date().toLocaleTimeString()}: ${message}`])
-  }
-
-  // Fetch match data
-  useEffect(() => {
-    const fetchMatch = async () => {
-      try {
-        const response = await fetch(`/api/matches/${matchId}`)
-        if (!response.ok) {
-          throw new Error('Failed to load match')
-        }
-        const matchData = await response.json()
-        setMatch(matchData)
-      } catch (err) {
-        setError(err instanceof Error ? err.message : 'Unknown error')
-      } finally {
-        setLoading(false)
-      }
-    }
-
-    fetchMatch()
-  }, [matchId])
+  }, [])
 
   useEffect(() => {
     if (!session?.user?.id) {
@@ -63,45 +61,129 @@ export function GameRoom({ matchId }: GameRoomProps) {
 
     // Join the game room
     if (socket && isConnected) {
-      joinGame(matchId)
+      socket.emit('join-game', { matchId, userId: session.user.id })
     }
-  }, [socket, isConnected, matchId, session, joinGame, router])
+  }, [socket, isConnected, matchId, router, session?.user?.id])
+
+  // Fetch initial match data to get the puzzle
+  useEffect(() => {
+    const fetchMatchData = async () => {
+      try {
+        const response = await fetch(`/api/matches/${matchId}`)
+        if (response.ok) {
+          const matchData = await response.json()
+          console.log('Initial match data:', matchData)
+          
+          if (matchData.match && matchData.match.sudokuGrid) {
+            // Parse the sudoku grid from JSON string
+            const parsedGrid = JSON.parse(matchData.match.sudokuGrid)
+            console.log('Parsed initial grid:', parsedGrid)
+            setInitialGrid(parsedGrid)
+          }
+        }
+      } catch (error) {
+        console.error('Failed to fetch match data:', error)
+      }
+    }
+
+    if (matchId && session?.user?.id && !initialGrid) {
+      fetchMatchData()
+    }
+  }, [matchId, session?.user?.id, initialGrid])
 
   // Handle Socket events for UI updates
   useEffect(() => {
     if (!socket) return
 
-    socket.on('player-joined', (data: { userId: string; game: { players: string[] } }) => {
-      addMessage(`Player joined the game. Players: ${data.game.players.length}`)
-    })
+    const handlePlayerJoined = (data: { userId: string; playerName: string }) => {
+      addMessage(`${data.playerName} joined the game`)
+    }
 
-    socket.on('move-made', (data: { row: number; col: number; value: number; userId: string }) => {
-      addMessage(`Player made a move: (${data.row + 1}, ${data.col + 1}) = ${data.value}`)
-    })
+    const handlePlayerLeft = (data: { userId: string; playerName: string }) => {
+      addMessage(`${data.playerName} left the game`)
+    }
 
-    socket.on('game-completed', (data: { winner: string }) => {
-      if (data.winner === session?.user?.id) {
-        addMessage('🎉 Congratulations! You won!')
-      } else {
-        addMessage('Game completed. Better luck next time!')
+    const handleMoveMade = (data: { row: number; col: number; value: number; playerName: string }) => {
+      addMessage(`${data.playerName} made a move: (${data.row + 1}, ${data.col + 1}) = ${data.value}`)
+    }
+
+    const handleGameCompleted = (data: { 
+      result?: 'won' | 'lost'
+      winner?: { id: string; name: string; score: number }
+      message?: string
+      reason?: string 
+    }) => {
+      if (data.result === 'won') {
+        addMessage('🎉 ' + (data.message || 'Congratulations! You won!'))
+      } else if (data.result === 'lost') {
+        addMessage('❌ ' + (data.message || 'Game Over! You lost.'))
+      } else if (data.winner) {
+        // Legacy format support
+        if (data.winner.id === session?.user?.id) {
+          addMessage('🎉 Congratulations! You won!')
+        } else {
+          addMessage(`Game completed. Winner: ${data.winner.name}`)
+        }
       }
-    })
+      
+      if (data.reason) {
+        addMessage(`Reason: ${data.reason}`)
+      }
+    }
 
-    socket.on('player-left', () => {
-      addMessage(`Player left the game`)
+    const handleHintReceived = (data: { row: number; col: number; value: number }) => {
+      addMessage(`💡 Hint: Try ${data.value} at (${data.row + 1}, ${data.col + 1})`)
+    }
+
+    const handleGameMessage = (data: { message: string; playerName?: string }) => {
+      if (data.playerName) {
+        addMessage(`${data.playerName}: ${data.message}`)
+      } else {
+        addMessage(data.message)
+      }
+    }
+
+    const handlePlayerReady = (data: { userId: string; isReady: boolean; playerName: string }) => {
+      addMessage(`${data.playerName} is ${data.isReady ? 'ready' : 'not ready'}`)
+    }
+
+    socket.on('player-joined', handlePlayerJoined)
+    socket.on('player-left', handlePlayerLeft)
+    socket.on('move-made', handleMoveMade)
+    socket.on('game-completed', handleGameCompleted)
+    socket.on('hint-received', handleHintReceived)
+    socket.on('game-message', handleGameMessage)
+    socket.on('player-ready', handlePlayerReady)
+    socket.on('game-started', () => addMessage('🎮 Game started!'))
+    socket.on('game-paused', () => addMessage('⏸️ Game paused'))
+    socket.on('game-resumed', () => addMessage('▶️ Game resumed'))
+    socket.on('player-surrendered', (data: { playerName: string }) => {
+      addMessage(`🏳️ ${data.playerName} surrendered`)
     })
 
     return () => {
-      socket.off('player-joined')
-      socket.off('move-made')
-      socket.off('game-completed')
-      socket.off('player-left')
+      socket.off('player-joined', handlePlayerJoined)
+      socket.off('player-left', handlePlayerLeft)
+      socket.off('move-made', handleMoveMade)
+      socket.off('game-completed', handleGameCompleted)
+      socket.off('hint-received', handleHintReceived)
+      socket.off('game-message', handleGameMessage)
+      socket.off('player-ready', handlePlayerReady)
+      socket.off('game-started')
+      socket.off('game-paused')
+      socket.off('game-resumed')
+      socket.off('player-surrendered')
     }
-  }, [socket, session])
+  }, [socket, session, addMessage])
 
-  // Timer effect
+  // Timer effect - use roomState time if available
   useEffect(() => {
-    if (!gameState?.isActive) return
+    const currentTime = roomState?.gameState?.timeRemaining ?? timeLeft
+    if (currentTime !== timeLeft) {
+      setTimeLeft(currentTime)
+    }
+
+    if (roomState?.status !== 'IN_PROGRESS') return
 
     const timer = setInterval(() => {
       setTimeLeft(prev => {
@@ -114,20 +196,35 @@ export function GameRoom({ matchId }: GameRoomProps) {
     }, 1000)
 
     return () => clearInterval(timer)
-  }, [gameState?.isActive])
+  }, [roomState?.status, roomState?.gameState?.timeRemaining, addMessage, timeLeft])
 
-  // Convert number[][] to SudokuGrid (number | null)[][]
+  // Helper functions
   const convertToSudokuGrid = (grid: number[][]): (number | null)[][] => {
     return grid.map(row => 
       row.map(cell => cell === 0 ? null : cell)
     )
   }
 
+  const getCurrentGameGrid = (): number[][] => {
+    if (roomState?.gameState?.grid) {
+      return roomState.gameState.grid
+    }
+    if (gameState?.gameState) {
+      return gameState.gameState
+    }
+    if (initialGrid) {
+      return initialGrid
+    }
+    // Return empty 9x9 grid
+    return Array(9).fill(null).map(() => Array(9).fill(0))
+  }
+
   const handleGridChange = (newGrid: (number | null)[][]) => {
     // Find the changed cell and send the move
+    const currentGrid = getCurrentGameGrid()
     for (let row = 0; row < 9; row++) {
       for (let col = 0; col < 9; col++) {
-        const oldValue = gameState?.gameState[row][col] || 0
+        const oldValue = currentGrid[row]?.[col] || 0
         const newValue = newGrid[row][col] || 0
         if (oldValue !== newValue) {
           if (oldValue === 0) { // Only allow changes to empty cells
@@ -144,10 +241,44 @@ export function GameRoom({ matchId }: GameRoomProps) {
     router.push('/dashboard')
   }
 
+  const handleToggleReady = () => {
+    const newReadyState = !isPlayerReady
+    setIsPlayerReady(newReadyState)
+    setReady(newReadyState)
+  }
+
+  const handleRequestHint = () => {
+    requestHint()
+  }
+
+  const handleSurrender = () => {
+    if (showSurrenderConfirm) {
+      surrender()
+      setShowSurrenderConfirm(false)
+    } else {
+      setShowSurrenderConfirm(true)
+    }
+  }
+
+  const handleSendMessage = () => {
+    if (chatMessage.trim()) {
+      sendMessage(chatMessage.trim())
+      setChatMessage('')
+    }
+  }
+
   const isMyTurn = () => {
-    if (!gameState || !session?.user?.id) return false
-    const myPlayerIndex = gameState.players.indexOf(session.user.id)
+    if (!gameState) return false
+    const myPlayerIndex = gameState.players.indexOf(session?.user?.id || '')
     return myPlayerIndex === gameState.currentPlayer
+  }
+
+  const getCurrentPlayer = () => {
+    return roomState?.players?.find(p => p.id === session?.user?.id)
+  }
+
+  const getGamePhase = () => {
+    return roomState?.status || 'WAITING'
   }
 
   const formatTime = (seconds: number) => {
@@ -156,13 +287,20 @@ export function GameRoom({ matchId }: GameRoomProps) {
     return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`
   }
 
+  const getGameGrid = () => {
+    const currentGrid = getCurrentGameGrid()
+    const convertedGrid = convertToSudokuGrid(currentGrid)
+    
+    return convertedGrid
+  }
+
   if (!session?.user?.id) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <Card className="w-96">
           <CardContent className="p-6">
             <div className="text-center">
-              <AlertCircle className="mx-auto h-12 w-12 text-yellow-500 mb-4" />
+              <div className="mx-auto h-12 w-12 text-yellow-500 mb-4">⚠️</div>
               <h3 className="text-lg font-semibold mb-2">Authentication Required</h3>
               <p className="text-gray-600 mb-4">Please sign in to join the game.</p>
               <Button onClick={() => router.push('/auth/signin')}>
@@ -191,7 +329,7 @@ export function GameRoom({ matchId }: GameRoomProps) {
     )
   }
 
-  if (!gameState) {
+  if (!gameState && !roomState) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <Card className="w-96">
@@ -207,6 +345,12 @@ export function GameRoom({ matchId }: GameRoomProps) {
     )
   }
 
+  const currentPlayer = getCurrentPlayer()
+  const gamePhase = getGamePhase()
+  const gameGrid = getGameGrid()
+  const isGameActive = gamePhase === 'IN_PROGRESS'
+  const canMakeMove = isGameActive && (roomState?.gameState?.gameMode !== 'TURN_BASED' || isMyTurn())
+
   return (
     <div className="container mx-auto p-4 space-y-6">
       {/* Game Header */}
@@ -216,15 +360,22 @@ export function GameRoom({ matchId }: GameRoomProps) {
             <span className="flex items-center space-x-2">
               <Trophy className="h-6 w-6 text-yellow-500" />
               <span>Game #{matchId.slice(-8)}</span>
-              {!gameState.isActive && (
-                <Badge variant="secondary">Game Completed</Badge>
-              )}
+              <Badge variant={gamePhase === 'IN_PROGRESS' ? 'default' : 'secondary'}>
+                {gamePhase.replace('_', ' ')}
+              </Badge>
             </span>
             <div className="flex items-center space-x-4">
-              <Badge variant={isMyTurn() ? "default" : "secondary"}>
-                {isMyTurn() ? "Your Turn" : "Opponent's Turn"}
-              </Badge>
-              {gameState.isActive && (
+              <div className="flex items-center space-x-2">
+                {isConnected ? (
+                  <Wifi className="h-4 w-4 text-green-500" />
+                ) : (
+                  <WifiOff className="h-4 w-4 text-red-500" />
+                )}
+                <span className="text-sm text-gray-600">
+                  {isConnected ? 'Connected' : 'Disconnected'}
+                </span>
+              </div>
+              {isGameActive && (
                 <div className="flex items-center space-x-1">
                   <Timer className="h-4 w-4" />
                   <span className="font-mono text-sm">
@@ -243,9 +394,9 @@ export function GameRoom({ matchId }: GameRoomProps) {
           <Card>
             <CardContent className="p-6">
               <SudokuGridComponent
-                grid={convertToSudokuGrid(gameState.gameState)}
+                grid={gameGrid}
                 onGridChange={handleGridChange}
-                isReadonly={!isMyTurn() || !gameState.isActive}
+                isReadonly={!canMakeMove}
               />
             </CardContent>
           </Card>
@@ -253,16 +404,38 @@ export function GameRoom({ matchId }: GameRoomProps) {
 
         {/* Game Info Sidebar */}
         <div className="space-y-4">
-          {/* Players */}
+          {/* Player Status */}
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center space-x-2">
                 <Users className="h-5 w-5" />
-                <span>Players ({gameState.players.length})</span>
+                <span>Players ({roomState?.players?.length || gameState?.players?.length || 0})</span>
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-2">
-              {gameState.players.map((playerId, index) => (
+              {roomState?.players?.map((player) => (
+                <div key={player.id} className="flex items-center justify-between p-2 rounded-lg bg-gray-50">
+                  <div className="flex items-center space-x-2">
+                    <div className="flex items-center space-x-1">
+                      <div className={`w-2 h-2 rounded-full ${player.isConnected ? 'bg-green-500' : 'bg-red-500'}`} />
+                      {player.isReady && <CheckCircle className="h-4 w-4 text-green-500" />}
+                    </div>
+                    <span className="text-sm font-medium">
+                      {player.id === session?.user?.id ? 'You' : player.name}
+                    </span>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <Badge variant="outline">
+                      Score: {player.score}
+                    </Badge>
+                    {player.hintsRemaining !== undefined && (
+                      <Badge variant="secondary">
+                        {player.hintsRemaining} hints
+                      </Badge>
+                    )}
+                  </div>
+                </div>
+              )) || gameState?.players?.map((playerId, index) => (
                 <div key={playerId} className="flex items-center justify-between p-2 rounded-lg bg-gray-50">
                   <div className="flex items-center space-x-2">
                     {index === gameState.currentPlayer && (
@@ -283,6 +456,49 @@ export function GameRoom({ matchId }: GameRoomProps) {
           {/* Game Controls */}
           <Card>
             <CardContent className="p-4 space-y-3">
+              {gamePhase === 'WAITING' && (
+                <Button 
+                  onClick={handleToggleReady}
+                  variant={isPlayerReady ? "default" : "outline"}
+                  className="w-full"
+                >
+                  {isPlayerReady ? 'Ready!' : 'Ready Up'}
+                </Button>
+              )}
+              
+              {isGameActive && (
+                <>
+                  <Button 
+                    onClick={handleRequestHint}
+                    variant="outline"
+                    className="w-full"
+                    disabled={!currentPlayer || currentPlayer.hintsRemaining === 0}
+                  >
+                    <Lightbulb className="h-4 w-4 mr-2" />
+                    Request Hint ({currentPlayer?.hintsRemaining || 0} left)
+                  </Button>
+                  
+                  <Button 
+                    onClick={handleSurrender}
+                    variant={showSurrenderConfirm ? "destructive" : "outline"}
+                    className="w-full"
+                  >
+                    <Flag className="h-4 w-4 mr-2" />
+                    {showSurrenderConfirm ? 'Confirm Surrender' : 'Surrender'}
+                  </Button>
+                  
+                  {showSurrenderConfirm && (
+                    <Button 
+                      onClick={() => setShowSurrenderConfirm(false)}
+                      variant="outline"
+                      className="w-full"
+                    >
+                      Cancel
+                    </Button>
+                  )}
+                </>
+              )}
+              
               <Button 
                 variant="outline" 
                 onClick={handleLeaveGame}
@@ -293,28 +509,59 @@ export function GameRoom({ matchId }: GameRoomProps) {
             </CardContent>
           </Card>
 
-          {/* Game Messages */}
+          {/* Chat */}
           <Card>
             <CardHeader>
-              <CardTitle className="text-sm">Game Activity</CardTitle>
+              <CardTitle className="flex items-center justify-between">
+                <span className="flex items-center space-x-2">
+                  <MessageCircle className="h-4 w-4" />
+                  <span className="text-sm">Chat</span>
+                </span>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setChatVisible(!chatVisible)}
+                >
+                  {chatVisible ? 'Hide' : 'Show'}
+                </Button>
+              </CardTitle>
             </CardHeader>
-            <CardContent>
-              <div className="space-y-1 max-h-40 overflow-y-auto">
-                {messages.slice(-10).map((message, index) => (
-                  <p key={index} className="text-xs text-gray-600 bg-gray-50 p-2 rounded">
-                    {message}
-                  </p>
-                ))}
-                {messages.length === 0 && (
-                  <p className="text-xs text-gray-400 italic">
-                    No activity yet...
-                  </p>
-                )}
-              </div>
-            </CardContent>
+            {chatVisible && (
+              <CardContent>
+                <div className="space-y-2">
+                  <div className="max-h-32 overflow-y-auto space-y-1">
+                    {messages.slice(-10).map((message, index) => (
+                      <p key={index} className="text-xs text-gray-600 bg-gray-50 p-2 rounded">
+                        {message}
+                      </p>
+                    ))}
+                    {messages.length === 0 && (
+                      <p className="text-xs text-gray-400 italic">
+                        No messages yet...
+                      </p>
+                    )}
+                  </div>
+                  <div className="flex space-x-2">
+                    <input
+                      type="text"
+                      value={chatMessage}
+                      onChange={(e) => setChatMessage(e.target.value)}
+                      onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
+                      placeholder="Type a message..."
+                      className="flex-1 px-2 py-1 text-xs border rounded"
+                    />
+                    <Button size="sm" onClick={handleSendMessage}>
+                      Send
+                    </Button>
+                  </div>
+                </div>
+              </CardContent>
+            )}
           </Card>
         </div>
       </div>
     </div>
   )
 }
+
+export default GameRoom
