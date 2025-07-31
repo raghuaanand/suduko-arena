@@ -210,91 +210,176 @@ export default function TournamentsPage() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <Card className="w-96">
-          <CardContent className="p-6">
-            <div className="text-center">
-              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-              <h3 className="text-lg font-semibold mb-2">Loading Tournaments...</h3>
-              <p className="text-gray-600">Fetching available tournaments.</p>
+      <div className="min-h-screen bg-gradient-to-br from-[#1a1a2e] via-[#16213e] to-[#0f3460] flex items-center justify-center">
+        <div className="relative">
+          <div className="absolute inset-0 bg-gradient-to-br from-[#e94560]/10 to-[#0f3460]/10 rounded-xl"></div>
+          <div className="relative bg-[#1a1a2e]/90 backdrop-blur-md border border-[#e94560]/20 rounded-xl shadow-2xl p-8 text-center">
+            <div className="absolute inset-0 bg-gradient-to-br from-[#e94560]/5 to-[#0f3460]/5 rounded-xl"></div>
+            <div className="relative">
+              <div className="relative mb-6">
+                <div className="absolute inset-0 bg-gradient-to-r from-[#e94560] to-[#f9ed69] rounded-full blur-lg opacity-50"></div>
+                <div className="relative animate-spin rounded-full h-12 w-12 border-2 border-transparent bg-gradient-to-r from-[#e94560] to-[#f9ed69] p-1 mx-auto">
+                  <div className="bg-[#1a1a2e] rounded-full h-full w-full"></div>
+                </div>
+              </div>
+              <h3 className="text-lg font-semibold mb-2 text-white">Loading Cosmic Tournaments...</h3>
+              <p className="text-white/70">Scanning the arena for stellar competitions.</p>
             </div>
-          </CardContent>
-        </Card>
+          </div>
+        </div>
       </div>
     )
   }
 
   return (
-    <div className="container mx-auto p-4 space-y-6">
+    <div className="min-h-screen bg-gradient-to-br from-[#1a1a2e] via-[#16213e] to-[#0f3460] relative overflow-hidden">
+      {/* Cosmic Background Elements */}
+      <div className="absolute inset-0 overflow-hidden">
+        <div className="absolute top-20 left-10 w-80 h-80 bg-gradient-to-r from-[#e94560]/20 to-[#f9ed69]/15 rounded-full mix-blend-multiply filter blur-3xl opacity-60 animate-pulse"></div>
+        <div className="absolute top-40 right-10 w-96 h-96 bg-gradient-to-l from-[#0f3460]/40 to-[#e94560]/25 rounded-full mix-blend-multiply filter blur-3xl opacity-50 animate-pulse" style={{animationDelay: '2s'}}></div>
+        <div className="absolute -bottom-32 left-1/2 transform -translate-x-1/2 w-[500px] h-[500px] bg-gradient-to-t from-[#f9ed69]/20 to-[#16213e]/30 rounded-full mix-blend-multiply filter blur-3xl opacity-40 animate-pulse" style={{animationDelay: '4s'}}></div>
+        
+        {/* Floating star particles */}
+        <div className="absolute top-1/4 left-1/4 w-2 h-2 bg-[#f9ed69] rounded-full animate-ping opacity-70"></div>
+        <div className="absolute top-1/3 right-1/3 w-1 h-1 bg-[#e94560] rounded-full animate-ping opacity-80" style={{animationDelay: '1s'}}></div>
+        <div className="absolute bottom-1/4 left-1/3 w-1.5 h-1.5 bg-[#0f3460] rounded-full animate-ping opacity-60" style={{animationDelay: '3s'}}></div>
+      </div>
+
+      <div className="relative z-10 container mx-auto p-4 space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <h1 className="text-3xl font-bold flex items-center space-x-2">
-          <Crown className="h-8 w-8 text-yellow-600" />
-          <span>Tournaments</span>
-        </h1>
+      <div className="flex items-center justify-between mb-8">
         <div className="flex items-center space-x-4">
-          <Card className="px-4 py-2">
-            <div className="flex items-center space-x-2">
-              <Wallet className="h-4 w-4 text-green-600" />
-              <span className="font-semibold">₹{walletBalance.toFixed(2)}</span>
+          <div className="relative">
+            <div className="absolute inset-0 bg-gradient-to-r from-yellow-500 to-orange-500 rounded-full blur-lg opacity-50"></div>
+            <Crown className="relative h-10 w-10 text-white" />
+          </div>
+          <div>
+            <h1 className="text-4xl font-bold text-white">Cosmic Tournaments</h1>
+            <p className="text-gray-300 text-sm">Compete for stellar prizes in the ultimate arena</p>
+          </div>
+        </div>
+        <div className="flex items-center space-x-4">
+          <div className="relative">
+            <div className="absolute inset-0 bg-gradient-to-r from-green-500/20 to-blue-500/20 rounded-xl"></div>
+            <div className="relative bg-gray-900/40 backdrop-blur-sm border border-green-500/30 rounded-xl px-6 py-3">
+              <div className="flex items-center space-x-3">
+                <div className="relative">
+                  <div className="absolute inset-0 bg-gradient-to-r from-green-500 to-blue-500 rounded-full blur-lg opacity-50"></div>
+                  <Wallet className="relative h-5 w-5 text-white" />
+                </div>
+                <span className="font-bold text-xl text-white">₹{walletBalance.toFixed(2)}</span>
+              </div>
             </div>
-          </Card>
-          <Button onClick={() => router.push('/dashboard')} variant="outline">
-            Back to Dashboard
-          </Button>
+          </div>
+          <button 
+            onClick={() => router.push('/dashboard')}
+            className="group relative px-6 py-3 bg-gradient-to-r from-purple-600/20 to-blue-600/20 border border-purple-500/30 rounded-xl text-white font-medium transition-all duration-300 hover:from-purple-500/30 hover:to-blue-500/30 hover:border-purple-400/50 hover:shadow-lg hover:scale-105"
+          >
+            <div className="absolute inset-0 bg-gradient-to-r from-purple-500 to-blue-500 rounded-xl opacity-0 group-hover:opacity-20 transition-opacity duration-300"></div>
+            <span className="relative">Back to Dashboard</span>
+          </button>
         </div>
       </div>
 
       {/* Tournament Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {tournaments.map((tournament) => (
-          <Card key={tournament.id} className="hover:shadow-lg transition-shadow">
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <CardTitle className="text-lg">{tournament.name}</CardTitle>
-                <Badge className={getStatusColor(tournament.status)}>
+          <div key={tournament.id} className="relative overflow-hidden group hover:shadow-2xl transition-all duration-500 border-2 border-[#e94560]/30 hover:border-[#e94560]/60 bg-gradient-to-br from-[#1a1a2e]/90 to-[#16213e]/90 backdrop-blur-md transform hover:scale-105 cursor-pointer rounded-xl">
+            <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-[#e94560]/30 to-[#f9ed69]/20 rounded-bl-full opacity-60"></div>
+            <div className={`absolute -top-2 -right-2 w-4 h-4 rounded-full animate-ping ${
+              tournament.status === 'REGISTRATION' 
+                ? 'bg-[#f9ed69]' 
+                : tournament.status === 'IN_PROGRESS'
+                ? 'bg-[#e94560]'
+                : 'bg-gray-400'
+            }`}></div>
+            
+            {/* Header */}
+            <div className="relative z-10 p-6 border-b border-[#e94560]/20">
+              <div className="flex items-center justify-between mb-3">
+                <h3 className="text-xl font-bold text-white">{tournament.name}</h3>
+                <div className={`px-3 py-1 rounded-full text-xs font-semibold ${
+                  tournament.status === 'REGISTRATION' 
+                    ? 'bg-gradient-to-r from-[#f9ed69]/20 to-[#e94560]/20 border border-[#f9ed69]/30 text-[#f9ed69]' 
+                    : tournament.status === 'IN_PROGRESS'
+                    ? 'bg-gradient-to-r from-[#e94560]/20 to-[#f9ed69]/20 border border-[#e94560]/30 text-[#e94560]'
+                    : 'bg-gradient-to-r from-gray-500/20 to-gray-600/20 border border-gray-500/30 text-gray-400'
+                }`}>
                   {getStatusText(tournament.status)}
-                </Badge>
+                </div>
               </div>
-              <CardDescription>{tournament.description}</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
+              <p className="text-white/70 text-sm">{tournament.description}</p>
+            </div>
+
+            {/* Content */}
+            <div className="relative z-10 p-6 space-y-6">
               {/* Tournament Stats */}
-              <div className="grid grid-cols-2 gap-4 text-sm">
-                <div className="flex items-center space-x-2">
-                  <Trophy className="h-4 w-4 text-yellow-600" />
-                  <span>₹{tournament.prizePool.toLocaleString()}</span>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="flex items-center space-x-3 p-3 bg-gradient-to-r from-[#f9ed69]/10 to-[#e94560]/10 border border-[#f9ed69]/20 rounded-lg">
+                  <div className="w-8 h-8 bg-gradient-to-br from-[#f9ed69] to-[#e94560] rounded-lg flex items-center justify-center">
+                    <Trophy className="h-4 w-4 text-[#1a1a2e]" />
+                  </div>
+                  <div>
+                    <p className="text-xs text-white/60">Prize Pool</p>
+                    <p className="text-[#f9ed69] font-bold">₹{tournament.prizePool.toLocaleString()}</p>
+                  </div>
                 </div>
-                <div className="flex items-center space-x-2">
-                  <Wallet className="h-4 w-4 text-green-600" />
-                  <span>₹{tournament.entryFee}</span>
+                <div className="flex items-center space-x-3 p-3 bg-gradient-to-r from-[#0f3460]/10 to-[#e94560]/10 border border-[#0f3460]/20 rounded-lg">
+                  <div className="w-8 h-8 bg-gradient-to-br from-[#0f3460] to-[#e94560] rounded-lg flex items-center justify-center">
+                    <Wallet className="h-4 w-4 text-white" />
+                  </div>
+                  <div>
+                    <p className="text-xs text-white/60">Entry Fee</p>
+                    <p className="text-[#f9ed69] font-bold">₹{tournament.entryFee}</p>
+                  </div>
                 </div>
-                <div className="flex items-center space-x-2">
-                  <Users className="h-4 w-4 text-blue-600" />
-                  <span>{tournament.currentPlayers}/{tournament.maxPlayers}</span>
+                <div className="flex items-center space-x-3 p-3 bg-gradient-to-r from-[#e94560]/10 to-[#f9ed69]/10 border border-[#e94560]/20 rounded-lg">
+                  <div className="w-8 h-8 bg-gradient-to-br from-[#e94560] to-[#f9ed69] rounded-lg flex items-center justify-center">
+                    <Users className="h-4 w-4 text-[#1a1a2e]" />
+                  </div>
+                  <div>
+                    <p className="text-xs text-white/60">Players</p>
+                    <p className="text-[#f9ed69] font-bold">{tournament.currentPlayers}/{tournament.maxPlayers}</p>
+                  </div>
                 </div>
-                <div className="flex items-center space-x-2">
-                  <Clock className="h-4 w-4 text-purple-600" />
-                  <span className="text-xs">{formatTime(tournament.startTime)}</span>
+                <div className="flex items-center space-x-3 p-3 bg-gradient-to-r from-[#f9ed69]/10 to-[#0f3460]/10 border border-[#f9ed69]/20 rounded-lg">
+                  <div className="w-8 h-8 bg-gradient-to-br from-[#f9ed69] to-[#0f3460] rounded-lg flex items-center justify-center">
+                    <Clock className="h-4 w-4 text-[#1a1a2e]" />
+                  </div>
+                  <div>
+                    <p className="text-xs text-white/60">Status</p>
+                    <p className="text-[#f9ed69] font-bold text-xs">{formatTime(tournament.startTime)}</p>
+                  </div>
                 </div>
               </div>
 
               {/* Progress Bar */}
-              <div className="w-full bg-gray-200 rounded-full h-2">
-                <div 
-                  className="bg-blue-600 h-2 rounded-full transition-all duration-300"
-                  style={{ 
-                    width: `${(tournament.currentPlayers / tournament.maxPlayers) * 100}%` 
-                  }}
-                ></div>
+              <div className="space-y-2">
+                <div className="flex justify-between text-sm text-white/70">
+                  <span>Registration Progress</span>
+                  <span>{Math.round((tournament.currentPlayers / tournament.maxPlayers) * 100)}%</span>
+                </div>
+                <div className="w-full bg-[#1a1a2e]/50 rounded-full h-3 overflow-hidden border border-[#e94560]/20">
+                  <div 
+                    className="h-full bg-gradient-to-r from-[#e94560] to-[#f9ed69] rounded-full transition-all duration-500 shadow-lg"
+                    style={{ 
+                      width: `${(tournament.currentPlayers / tournament.maxPlayers) * 100}%` 
+                    }}
+                  ></div>
+                </div>
               </div>
 
               {/* Action Button */}
-              <Button 
+              <button 
                 onClick={() => handleJoinTournament(tournament)}
                 disabled={!canJoinTournament(tournament)}
-                className="w-full"
-                variant={tournament.status === 'IN_PROGRESS' ? 'default' : 'outline'}
+                className={`w-full py-3 px-6 rounded-xl font-semibold transition-all duration-300 transform hover:scale-105 shadow-lg disabled:transform-none disabled:cursor-not-allowed ${
+                  tournament.status === 'COMPLETED' || tournament.currentPlayers >= tournament.maxPlayers || walletBalance < tournament.entryFee
+                    ? 'bg-gradient-to-r from-gray-600 to-gray-700 text-gray-300 cursor-not-allowed'
+                    : tournament.status === 'IN_PROGRESS'
+                    ? 'bg-gradient-to-r from-[#0f3460] to-[#e94560] hover:from-[#0a2850] hover:to-[#d63847] text-white'
+                    : 'bg-gradient-to-r from-[#e94560] to-[#f9ed69] hover:from-[#d63847] hover:to-[#f7e742] text-[#1a1a2e]'
+                }`}
               >
                 {tournament.status === 'COMPLETED' ? (
                   'Tournament Ended'
@@ -303,64 +388,105 @@ export default function TournamentsPage() {
                 ) : walletBalance < tournament.entryFee ? (
                   `Need ₹${tournament.entryFee - walletBalance} more`
                 ) : tournament.status === 'IN_PROGRESS' ? (
-                  <div className="flex items-center space-x-2">
+                  <div className="flex items-center justify-center space-x-2">
                     <span>View Bracket</span>
                     <ArrowRight className="h-4 w-4" />
                   </div>
                 ) : (
-                  <div className="flex items-center space-x-2">
+                  <div className="flex items-center justify-center space-x-2">
                     <span>Join Tournament</span>
                     <ArrowRight className="h-4 w-4" />
                   </div>
                 )}
-              </Button>
+              </button>
 
               {/* Additional Info */}
               {tournament.status === 'REGISTRATION' && (
-                <div className="text-xs text-gray-500 text-center">
-                  <Calendar className="h-3 w-3 inline mr-1" />
-                  {new Date(tournament.startTime).toLocaleDateString('en-IN', {
-                    weekday: 'short',
-                    month: 'short',
-                    day: 'numeric',
-                    hour: '2-digit',
-                    minute: '2-digit'
-                  })}
+                <div className="text-center p-3 bg-gradient-to-r from-[#0f3460]/10 to-[#e94560]/10 border border-[#0f3460]/20 rounded-lg">
+                  <div className="flex items-center justify-center space-x-2 text-sm text-white/70">
+                    <Calendar className="h-4 w-4 text-[#0f3460]" />
+                    <span>
+                      {new Date(tournament.startTime).toLocaleDateString('en-IN', {
+                        weekday: 'short',
+                        month: 'short',
+                        day: 'numeric',
+                        hour: '2-digit',
+                        minute: '2-digit'
+                      })}
+                    </span>
+                  </div>
                 </div>
               )}
-            </CardContent>
-          </Card>
+            </div>
+          </div>
         ))}
       </div>
 
       {/* Tournament Rules */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Tournament Rules</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div>
-              <h4 className="font-semibold mb-2">How Tournaments Work</h4>
-              <ul className="space-y-1 text-sm text-gray-600">
-                <li>• Single elimination bracket format</li>
-                <li>• Each round has a 30-minute time limit</li>
-                <li>• First to complete the puzzle wins the round</li>
-                <li>• Winner takes 70% of prize pool, runner-up 30%</li>
-              </ul>
+      <div className="relative overflow-hidden border-2 border-[#f9ed69]/30 bg-gradient-to-br from-[#1a1a2e]/90 to-[#16213e]/90 backdrop-blur-md rounded-xl">
+        <div className="absolute top-0 right-0 w-40 h-40 bg-gradient-to-br from-[#f9ed69]/10 to-[#e94560]/5 rounded-bl-full"></div>
+        <div className="relative z-10 border-b border-[#f9ed69]/20 p-6">
+          <h3 className="text-2xl font-bold text-white flex items-center space-x-3">
+            <div className="w-8 h-8 bg-gradient-to-br from-[#f9ed69] to-[#e94560] rounded-lg flex items-center justify-center">
+              <Trophy className="h-5 w-5 text-[#1a1a2e]" />
             </div>
-            <div>
-              <h4 className="font-semibold mb-2">Entry Requirements</h4>
-              <ul className="space-y-1 text-sm text-gray-600">
-                <li>• Sufficient wallet balance for entry fee</li>
-                <li>• Tournament must be in registration phase</li>
-                <li>• Account must be verified</li>
-                <li>• Fair play policy applies</li>
-              </ul>
+            <span>Cosmic Tournament Rules</span>
+          </h3>
+        </div>
+        <div className="relative z-10 p-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+            <div className="space-y-4">
+              <h4 className="font-semibold text-lg text-white flex items-center space-x-2">
+                <div className="w-3 h-3 bg-gradient-to-r from-[#e94560] to-[#f9ed69] rounded-full"></div>
+                <span>How Tournaments Work</span>
+              </h4>
+              <div className="space-y-3">
+                <div className="flex items-start space-x-3 p-3 bg-gradient-to-r from-[#e94560]/10 to-[#f9ed69]/10 border border-[#e94560]/20 rounded-lg">
+                  <div className="w-2 h-2 bg-gradient-to-r from-[#e94560] to-[#f9ed69] rounded-full mt-2 flex-shrink-0"></div>
+                  <span className="text-white/70 text-sm">Single elimination bracket format for ultimate competition</span>
+                </div>
+                <div className="flex items-start space-x-3 p-3 bg-gradient-to-r from-[#e94560]/10 to-[#f9ed69]/10 border border-[#e94560]/20 rounded-lg">
+                  <div className="w-2 h-2 bg-gradient-to-r from-[#e94560] to-[#f9ed69] rounded-full mt-2 flex-shrink-0"></div>
+                  <span className="text-white/70 text-sm">Each cosmic round has a 30-minute time limit</span>
+                </div>
+                <div className="flex items-start space-x-3 p-3 bg-gradient-to-r from-[#e94560]/10 to-[#f9ed69]/10 border border-[#e94560]/20 rounded-lg">
+                  <div className="w-2 h-2 bg-gradient-to-r from-[#e94560] to-[#f9ed69] rounded-full mt-2 flex-shrink-0"></div>
+                  <span className="text-white/70 text-sm">First to complete the stellar puzzle wins the round</span>
+                </div>
+                <div className="flex items-start space-x-3 p-3 bg-gradient-to-r from-[#e94560]/10 to-[#f9ed69]/10 border border-[#e94560]/20 rounded-lg">
+                  <div className="w-2 h-2 bg-gradient-to-r from-[#e94560] to-[#f9ed69] rounded-full mt-2 flex-shrink-0"></div>
+                  <span className="text-white/70 text-sm">Champion takes 70% of prize pool, runner-up claims 30%</span>
+                </div>
+              </div>
+            </div>
+            <div className="space-y-4">
+              <h4 className="font-semibold text-lg text-white flex items-center space-x-2">
+                <div className="w-3 h-3 bg-gradient-to-r from-[#0f3460] to-[#e94560] rounded-full"></div>
+                <span>Entry Requirements</span>
+              </h4>
+              <div className="space-y-3">
+                <div className="flex items-start space-x-3 p-3 bg-gradient-to-r from-[#0f3460]/10 to-[#e94560]/10 border border-[#0f3460]/20 rounded-lg">
+                  <div className="w-2 h-2 bg-gradient-to-r from-[#0f3460] to-[#e94560] rounded-full mt-2 flex-shrink-0"></div>
+                  <span className="text-white/70 text-sm">Sufficient cosmic credits (wallet balance) for entry fee</span>
+                </div>
+                <div className="flex items-start space-x-3 p-3 bg-gradient-to-r from-[#0f3460]/10 to-[#e94560]/10 border border-[#0f3460]/20 rounded-lg">
+                  <div className="w-2 h-2 bg-gradient-to-r from-[#0f3460] to-[#e94560] rounded-full mt-2 flex-shrink-0"></div>
+                  <span className="text-white/70 text-sm">Tournament must be in open registration phase</span>
+                </div>
+                <div className="flex items-start space-x-3 p-3 bg-gradient-to-r from-[#0f3460]/10 to-[#e94560]/10 border border-[#0f3460]/20 rounded-lg">
+                  <div className="w-2 h-2 bg-gradient-to-r from-[#0f3460] to-[#e94560] rounded-full mt-2 flex-shrink-0"></div>
+                  <span className="text-white/70 text-sm">Verified cosmic warrior account required</span>
+                </div>
+                <div className="flex items-start space-x-3 p-3 bg-gradient-to-r from-[#0f3460]/10 to-[#e94560]/10 border border-[#0f3460]/20 rounded-lg">
+                  <div className="w-2 h-2 bg-gradient-to-r from-[#0f3460] to-[#e94560] rounded-full mt-2 flex-shrink-0"></div>
+                  <span className="text-white/70 text-sm">Fair play policy and honor code applies</span>
+                </div>
+              </div>
             </div>
           </div>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
+      </div>
     </div>
   )
 }
