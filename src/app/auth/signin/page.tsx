@@ -7,7 +7,7 @@ import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
-import { Github, Mail, Eye, EyeOff, Target } from 'lucide-react'
+import { Github, Mail, Eye, EyeOff, Target, Play } from 'lucide-react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
@@ -76,48 +76,72 @@ export default function SignIn() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 dark:from-gray-900 dark:via-gray-800 dark:to-purple-900 flex items-center justify-center p-4">
-      <div className="w-full max-w-md">
+    <div className="min-h-screen bg-gradient-to-br from-[#1a1a2e] via-[#16213e] to-[#0f3460] relative overflow-hidden flex items-center justify-center p-4">
+      {/* Cosmic Background Elements */}
+      <div className="absolute inset-0 overflow-hidden">
+        <div className="absolute top-20 left-10 w-72 h-72 bg-gradient-to-r from-[#e94560]/20 to-[#f9ed69]/15 rounded-full mix-blend-multiply filter blur-3xl opacity-60 animate-pulse"></div>
+        <div className="absolute bottom-20 right-10 w-96 h-96 bg-gradient-to-l from-[#0f3460]/30 to-[#e94560]/20 rounded-full mix-blend-multiply filter blur-3xl opacity-50 animate-pulse" style={{animationDelay: '2s'}}></div>
+        
+        {/* Floating star particles */}
+        <div className="absolute top-1/4 left-1/4 w-2 h-2 bg-[#f9ed69] rounded-full animate-ping opacity-70"></div>
+        <div className="absolute top-1/3 right-1/3 w-1 h-1 bg-[#e94560] rounded-full animate-ping opacity-80" style={{animationDelay: '1s'}}></div>
+        <div className="absolute bottom-1/4 left-1/3 w-1.5 h-1.5 bg-[#0f3460] rounded-full animate-ping opacity-60" style={{animationDelay: '3s'}}></div>
+      </div>
+
+      <div className="w-full max-w-md relative z-10">
         {/* Header */}
         <div className="text-center mb-8">
-          <div className="flex items-center justify-center space-x-2 mb-4">
-            <div className="w-10 h-10 bg-gradient-to-br from-blue-600 to-purple-600 rounded-lg flex items-center justify-center">
-              <Target className="w-6 h-6 text-white" />
+          <div className="flex items-center justify-center space-x-3 mb-6">
+            <div className="w-12 h-12 bg-gradient-to-br from-[#e94560] to-[#f9ed69] rounded-xl flex items-center justify-center shadow-lg animate-pulse">
+              <Target className="w-7 h-7 text-[#1a1a2e]" />
             </div>
-            <h1 className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+            <h1 className="text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-[#e94560] to-[#f9ed69]">
               Sudoku Arena
             </h1>
           </div>
-          <p className="text-gray-600 dark:text-gray-400">
-            Sign in to your account
+          <div className="mb-4">
+            <span className="inline-block px-4 py-2 bg-gradient-to-r from-[#e94560]/20 to-[#f9ed69]/20 border border-[#e94560]/30 rounded-full text-[#f9ed69] text-sm font-medium backdrop-blur-sm">
+              🌌 Welcome Back, Cosmic Warrior
+            </span>
+          </div>
+          <p className="text-white/80 text-lg">
+            Return to your stellar journey
           </p>
         </div>
 
-        <Card className="border-0 shadow-xl">
-          <CardHeader>
-            <CardTitle>Welcome back!</CardTitle>
-            <CardDescription>
-              Choose your preferred sign in method
+        <Card className="relative overflow-hidden border-2 border-[#e94560]/30 bg-gradient-to-br from-[#1a1a2e]/90 to-[#16213e]/90 backdrop-blur-md shadow-2xl">
+          {/* Card glow effect */}
+          <div className="absolute -inset-1 bg-gradient-to-r from-[#e94560] to-[#f9ed69] rounded-2xl blur opacity-20"></div>
+          <div className="absolute top-2 right-2 w-2 h-2 bg-[#f9ed69] rounded-full animate-ping"></div>
+          
+          <CardHeader className="relative z-10">
+            <CardTitle className="text-2xl text-white font-bold text-center">
+              <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#f9ed69] to-[#e94560]">
+                Enter the Arena
+              </span>
+            </CardTitle>
+            <CardDescription className="text-white/70 text-center text-base">
+              Choose your path to cosmic mastery
             </CardDescription>
           </CardHeader>
-          <CardContent className="space-y-6">
+          <CardContent className="space-y-6 relative z-10">
             {/* OAuth Buttons */}
-            <div className="space-y-3">
+            <div className="space-y-4">
               <Button
                 onClick={() => handleOAuthSignIn('google')}
                 disabled={isLoading}
-                className="w-full bg-white hover:bg-gray-50 text-gray-900 border border-gray-300"
+                className="w-full bg-gradient-to-r from-[#f9ed69]/10 to-[#e94560]/10 hover:from-[#f9ed69]/20 hover:to-[#e94560]/20 text-white border-2 border-[#f9ed69]/30 hover:border-[#f9ed69]/50 backdrop-blur-sm transition-all duration-300 h-12"
                 variant="outline"
               >
-                <Mail className="w-4 h-4 mr-2" />
+                <Mail className="w-5 h-5 mr-3 text-[#f9ed69]" />
                 Continue with Google
               </Button>
               <Button
                 onClick={() => handleOAuthSignIn('github')}
                 disabled={isLoading}
-                className="w-full bg-gray-900 hover:bg-gray-800 text-white"
+                className="w-full bg-gradient-to-r from-[#0f3460] to-[#16213e] hover:from-[#0a2850] hover:to-[#12192e] text-white border-2 border-[#0f3460]/50 hover:border-[#0f3460]/70 transition-all duration-300 h-12"
               >
-                <Github className="w-4 h-4 mr-2" />
+                <Github className="w-5 h-5 mr-3" />
                 Continue with GitHub
               </Button>
             </div>
@@ -125,25 +149,28 @@ export default function SignIn() {
             {/* Divider */}
             <div className="relative">
               <div className="absolute inset-0 flex items-center">
-                <div className="w-full border-t border-gray-300" />
+                <div className="w-full border-t border-[#e94560]/30" />
               </div>
               <div className="relative flex justify-center text-sm">
-                <span className="px-2 bg-white text-gray-500">or</span>
+                <span className="px-3 bg-gradient-to-r from-[#1a1a2e] to-[#16213e] text-white/70">or</span>
               </div>
             </div>
 
             {/* Credentials Form */}
-            <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+            <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
               <div>
                 <Input
                   {...register('email')}
                   type="email"
                   placeholder="Email address"
                   disabled={isLoading}
-                  className="w-full"
+                  className="w-full h-12 bg-[#1a1a2e]/50 border-[#e94560]/30 focus:border-[#f9ed69] text-white placeholder:text-white/50 backdrop-blur-sm"
                 />
                 {errors.email && (
-                  <p className="text-sm text-red-600 mt-1">{errors.email.message}</p>
+                  <p className="text-sm text-[#e94560] mt-2 flex items-center">
+                    <span className="w-1 h-1 bg-[#e94560] rounded-full mr-2"></span>
+                    {errors.email.message}
+                  </p>
                 )}
               </div>
 
@@ -153,42 +180,58 @@ export default function SignIn() {
                   type={showPassword ? 'text' : 'password'}
                   placeholder="Password"
                   disabled={isLoading}
-                  className="w-full pr-10"
+                  className="w-full h-12 bg-[#1a1a2e]/50 border-[#e94560]/30 focus:border-[#f9ed69] text-white placeholder:text-white/50 backdrop-blur-sm pr-12"
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-white/60 hover:text-[#f9ed69] transition-colors"
                 >
-                  {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                 </button>
                 {errors.password && (
-                  <p className="text-sm text-red-600 mt-1">{errors.password.message}</p>
+                  <p className="text-sm text-[#e94560] mt-2 flex items-center">
+                    <span className="w-1 h-1 bg-[#e94560] rounded-full mr-2"></span>
+                    {errors.password.message}
+                  </p>
                 )}
               </div>
 
               {errors.root && (
-                <p className="text-sm text-red-600 text-center">{errors.root.message}</p>
+                <div className="text-center p-3 bg-[#e94560]/10 border border-[#e94560]/30 rounded-lg">
+                  <p className="text-sm text-[#e94560]">{errors.root.message}</p>
+                </div>
               )}
 
               <Button
                 type="submit"
                 disabled={isLoading}
-                className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700"
+                className="w-full h-12 bg-gradient-to-r from-[#f9ed69] to-[#e94560] hover:from-[#f7e742] hover:to-[#d63847] text-[#1a1a2e] border-0 font-bold text-lg shadow-xl hover:shadow-2xl transform hover:scale-105 transition-all duration-300"
               >
-                {isLoading ? 'Signing in...' : 'Sign In'}
+                {isLoading ? (
+                  <div className="flex items-center">
+                    <div className="w-5 h-5 border-2 border-[#1a1a2e]/20 border-t-[#1a1a2e] rounded-full animate-spin mr-3"></div>
+                    Entering Arena...
+                  </div>
+                ) : (
+                  <>
+                    <Play className="w-5 h-5 mr-2" />
+                    Enter the Arena
+                    <span className="ml-2">⚡</span>
+                  </>
+                )}
               </Button>
             </form>
 
             {/* Sign Up Link */}
-            <div className="text-center">
-              <p className="text-sm text-gray-600">
-                Don&apos;t have an account?{' '}
+            <div className="text-center pt-4 border-t border-[#e94560]/20">
+              <p className="text-white/70">
+                New to the cosmic realm?{' '}
                 <Link
                   href="/auth/signup"
-                  className="font-medium text-blue-600 hover:text-blue-500"
+                  className="font-semibold text-[#f9ed69] hover:text-white transition-colors duration-300"
                 >
-                  Sign up
+                  Begin your journey
                 </Link>
               </p>
             </div>
