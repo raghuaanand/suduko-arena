@@ -12,12 +12,20 @@ export async function GET(request: NextRequest) {
 
     const queueStatus = MatchmakingService.getQueueStatus(session.user.id)
     
+    if (!queueStatus) {
+      return NextResponse.json(
+        { message: 'Queue status not found' },
+        { status: 404 }
+      )
+    }
+
     return NextResponse.json({
-      inQueue: queueStatus.inQueue,
       position: queueStatus.position,
-      estimatedWaitTime: queueStatus.estimatedWaitTime,
-      matchFound: queueStatus.matchId ? true : false,
-      matchId: queueStatus.matchId
+      waitTime: queueStatus.waitTime,
+      skillRating: queueStatus.skillRating,
+      currentSkillRange: queueStatus.currentSkillRange,
+      potentialOpponents: queueStatus.potentialOpponents,
+      estimatedTime: queueStatus.estimatedTime
     })
   } catch (error) {
     console.error('Queue status error:', error)
